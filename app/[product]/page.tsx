@@ -6,12 +6,13 @@ export async function generateStaticParams() {
   return PRODUCTS.map((p) => ({ product: p.slug }));
 }
 
-export default function ProductPage({
+export default async function ProductPage({
   params,
 }: {
-  params: { product: string };
+  params: Promise<{ product: string }>;
 }) {
-  const product = PRODUCT_MAP[params.product];
+  const { product: slug } = await params;
+  const product = PRODUCT_MAP[slug];
   if (!product) notFound();
   return <ProductPageClient product={product} />;
 }
