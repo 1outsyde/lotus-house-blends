@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getCart, setQty, removeFromCart, clearCart, CartItem } from "@/lib/cart";
 import { subscribe } from "@/lib/cart";
 
 const CSS_VARS = `
   :root {
-    --lhb-parchment: #f5f0e8;
-    --lhb-parchment-dark: #ede5d0;
-    --lhb-moss: #3d5a3e;
-    --lhb-moss-light: #4e7350;
-    --lhb-gold: #c8a882;
+    --lhb-parchment: #e8e0cc;
+    --lhb-parchment-dark: #ddd5bb;
+    --lhb-moss: #2d4a3e;
+    --lhb-moss-light: #3d5a3e;
+    --lhb-gold: #c8a035;
     --lhb-black: #1a1a18;
     --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
     --font-body: var(--font-jost), 'Jost', sans-serif;
@@ -75,10 +74,10 @@ export default function CheckoutPage() {
       >
         <Link href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-dark.png" alt="Lotus House Blends" width={140} />
+          <img src="/logo-dark.png" alt="Lotus House Blends" width={140} style={{ display: "block" }} />
         </Link>
         <Link
-          href="/#shop"
+          href="/"
           style={{
             color: "rgba(255,255,255,.7)",
             textDecoration: "none",
@@ -207,11 +206,17 @@ export default function CheckoutPage() {
                       position: "relative",
                     }}
                   >
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={item.image}
                       alt={item.name}
-                      fill
-                      style={{ objectFit: "cover" }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        position: "absolute",
+                        inset: 0,
+                      }}
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}

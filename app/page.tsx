@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { PRODUCTS, Product } from "@/lib/products";
 import {
   addToCart,
@@ -16,15 +15,15 @@ import {
 // ─── CSS Variables ──────────────────────────────────────────────────────────
 const CSS_VARS = `
   :root {
-    --lhb-parchment: #f5f0e8;
-    --lhb-parchment-dark: #ede5d0;
-    --lhb-moss: #3d5a3e;
-    --lhb-moss-light: #4e7350;
-    --lhb-gold: #c8a882;
-    --lhb-gold-light: #d4b896;
+    --lhb-parchment: #e8e0cc;
+    --lhb-parchment-dark: #ddd5bb;
+    --lhb-moss: #2d4a3e;
+    --lhb-moss-light: #3d5a3e;
+    --lhb-gold: #c8a035;
+    --lhb-gold-light: #d4b050;
     --lhb-black: #1a1a18;
-    --lhb-night: #2a2250;
-    --lhb-midday: #3d5a3e;
+    --lhb-night: #7b5ea7;
+    --lhb-midday: #2d4a3e;
     --lhb-morning: #8b4513;
     --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
     --font-body: var(--font-jost), 'Jost', sans-serif;
@@ -36,9 +35,9 @@ const CSS_VARS = `
 
 // ─── Blend Colors ────────────────────────────────────────────────────────────
 const blendColors: Record<string, { bg: string; label: string }> = {
-  night: { bg: "var(--lhb-night)", label: "Night" },
-  midday: { bg: "var(--lhb-midday)", label: "Midday" },
-  morning: { bg: "var(--lhb-morning)", label: "Morning" },
+  night: { bg: "var(--lhb-night)", label: "Night Blend" },
+  midday: { bg: "var(--lhb-midday)", label: "Midday Blend" },
+  morning: { bg: "var(--lhb-morning)", label: "Morning Blend" },
 };
 
 // ─── Type Labels ─────────────────────────────────────────────────────────────
@@ -188,11 +187,17 @@ function CartDrawer({
                     position: "relative",
                   }}
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={item.image}
                     alt={item.name}
-                    fill
-                    style={{ objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      position: "absolute",
+                      inset: 0,
+                    }}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
@@ -387,11 +392,17 @@ function ProductCard({ product }: { product: Product }) {
             overflow: "hidden",
           }}
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={product.image}
             alt={product.name}
-            fill
-            style={{ objectFit: "cover" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              position: "absolute",
+              inset: 0,
+            }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
             }}
@@ -403,17 +414,17 @@ function ProductCard({ product }: { product: Product }) {
               top: 12,
               left: 12,
               padding: ".2rem .65rem",
-              borderRadius: "999px",
-              background: blend.bg,
+              borderRadius: "2px",
+              background: blend?.bg ?? "var(--lhb-moss)",
               color: "#fff",
-              fontSize: ".65rem",
+              fontSize: ".6rem",
               fontFamily: "var(--font-body)",
               fontWeight: 500,
               letterSpacing: ".1em",
               textTransform: "uppercase",
             }}
           >
-            {blend.label}
+            {blend?.label ?? product.blend}
           </div>
         </div>
 
@@ -429,7 +440,7 @@ function ProductCard({ product }: { product: Product }) {
               marginBottom: ".3rem",
             }}
           >
-            {typeLabels[product.type]}
+            {typeLabels[product.type] ?? product.type}
           </div>
           <h3
             style={{
@@ -594,7 +605,8 @@ export default function HomePage() {
               ((e.target as HTMLAnchorElement).style.color = "#fff")
             }
             onMouseLeave={(e) =>
-              ((e.target as HTMLAnchorElement).style.color = "rgba(255,255,255,.8)")
+              ((e.target as HTMLAnchorElement).style.color =
+                "rgba(255,255,255,.8)")
             }
           >
             Shop
@@ -614,7 +626,8 @@ export default function HomePage() {
               ((e.target as HTMLAnchorElement).style.color = "#fff")
             }
             onMouseLeave={(e) =>
-              ((e.target as HTMLAnchorElement).style.color = "rgba(255,255,255,.8)")
+              ((e.target as HTMLAnchorElement).style.color =
+                "rgba(255,255,255,.8)")
             }
           >
             Our Story
@@ -634,7 +647,8 @@ export default function HomePage() {
               ((e.target as HTMLAnchorElement).style.color = "#fff")
             }
             onMouseLeave={(e) =>
-              ((e.target as HTMLAnchorElement).style.color = "rgba(255,255,255,.8)")
+              ((e.target as HTMLAnchorElement).style.color =
+                "rgba(255,255,255,.8)")
             }
           >
             Wholesale
@@ -687,20 +701,13 @@ export default function HomePage() {
         style={{
           position: "relative",
           minHeight: "90vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
           overflow: "hidden",
-          background: "var(--lhb-black)",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            overflow: "hidden",
-          }}
-        >
+        {/* Left — lifestyle photo */}
+        <div style={{ position: "relative", overflow: "hidden", background: "var(--lhb-black)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/lifestyle-ritual.jpg"
@@ -709,81 +716,82 @@ export default function HomePage() {
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              opacity: 0.45,
+              opacity: 0.75,
             }}
           />
         </div>
+
+        {/* Right — brand panel (deep forest green, matches screenshot) */}
         <div
           style={{
-            position: "relative",
+            background: "#2d4a3e",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "4rem 3rem",
             textAlign: "center",
-            padding: "3rem 2rem",
-            maxWidth: 680,
           }}
         >
+          {/* Logo mark placeholder — swap for real SVG */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-dark.png"
+              alt="Lotus House Blends logo"
+              style={{ width: 120, height: "auto" }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+
           {/* Eyebrow */}
           <div
             style={{
-              display: "inline-block",
-              border: "1px solid rgba(200,168,130,.5)",
-              padding: ".3rem 1.2rem",
-              marginBottom: "1.5rem",
-              fontFamily: "var(--font-body)",
-              fontSize: ".7rem",
-              letterSpacing: ".2em",
+              fontSize: ".65rem",
+              letterSpacing: ".22em",
               textTransform: "uppercase",
-              color: "var(--lhb-gold)",
+              color: "rgba(255,255,255,.55)",
+              fontFamily: "var(--font-body)",
+              marginBottom: "1.5rem",
             }}
           >
-            Herbal · Botanical · Intentional
+            Presented by Outsyde &nbsp;·&nbsp; Wellness Vendor
           </div>
 
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(3rem, 8vw, 6rem)",
+              fontSize: "clamp(2.5rem, 5vw, 4.5rem)",
               fontWeight: 300,
               color: "#fff",
-              lineHeight: 1.1,
-              marginBottom: "1.25rem",
-              letterSpacing: ".02em",
+              lineHeight: 1.15,
+              marginBottom: "2rem",
+              letterSpacing: ".01em",
             }}
           >
-            Lotus House
+            Crafted for
             <br />
-            <em style={{ fontStyle: "italic" }}>Blends</em>
+            <em style={{ fontStyle: "italic", color: "#c8b8e8" }}>every ritual</em>
+            <br />
+            of your day
           </h1>
-
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "1rem",
-              color: "rgba(255,255,255,.75)",
-              lineHeight: 1.7,
-              marginBottom: "2.25rem",
-              fontWeight: 300,
-            }}
-          >
-            Handcrafted herbal blends for every ritual of your day.
-            <br />
-            Morning clarity. Midday balance. Night restoration.
-          </p>
 
           <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
             <Link
               href="#shop"
               style={{
                 padding: ".85rem 2.25rem",
-                background: "var(--lhb-moss)",
-                color: "#fff",
+                background: "var(--lhb-gold)",
+                color: "var(--lhb-black)",
                 textDecoration: "none",
                 borderRadius: "2px",
                 fontFamily: "var(--font-body)",
                 fontSize: ".8rem",
                 letterSpacing: ".12em",
                 textTransform: "uppercase",
-                fontWeight: 500,
-                transition: "background .2s",
+                fontWeight: 600,
               }}
             >
               Shop the Collection
@@ -796,12 +804,11 @@ export default function HomePage() {
                 color: "#fff",
                 textDecoration: "none",
                 borderRadius: "2px",
-                border: "1px solid rgba(255,255,255,.4)",
+                border: "1px solid rgba(255,255,255,.35)",
                 fontFamily: "var(--font-body)",
                 fontSize: ".8rem",
                 letterSpacing: ".12em",
                 textTransform: "uppercase",
-                transition: "border-color .2s",
               }}
             >
               Our Story
@@ -1017,130 +1024,102 @@ export default function HomePage() {
       </section>
 
       {/* ── SHOP SECTION ────────────────────────────────────────────────── */}
-      <section id="shop" style={{ padding: "5rem 2rem" }}>
+      <section id="shop" style={{ padding: "5rem 2rem", background: "var(--lhb-parchment)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           {/* Section header */}
-          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-            <div
-              style={{
-                fontSize: ".65rem",
-                letterSpacing: ".2em",
-                textTransform: "uppercase",
-                color: "var(--lhb-gold)",
-                fontFamily: "var(--font-body)",
-                marginBottom: ".75rem",
-              }}
-            >
-              The Collection
-            </div>
+          <div style={{ marginBottom: "2.5rem" }}>
             <h2
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                fontSize: "clamp(2rem, 5vw, 3rem)",
                 fontWeight: 400,
-                marginBottom: "1rem",
+                marginBottom: "0",
               }}
             >
-              Shop by Ritual
+              Shop the{" "}
+              <em style={{ color: "var(--lhb-moss)", fontStyle: "italic" }}>
+                Blends
+              </em>
             </h2>
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: ".9rem",
-                color: "#666",
-                maxWidth: 500,
-                margin: "0 auto",
-                lineHeight: 1.7,
-              }}
-            >
-              Three blends. Three times of day. Every format you need — loose
-              herbs, herbal cones, and tea boxes.
-            </p>
           </div>
 
-          {/* Filters */}
+          {/* Divider */}
+          <div style={{ borderTop: "1px solid rgba(0,0,0,.12)", marginBottom: "2rem" }} />
+
+          {/* Filters — matching screenshot style: outlined pill tabs */}
           <div
             style={{
               display: "flex",
-              gap: "1rem",
-              justifyContent: "center",
+              gap: ".75rem",
               flexWrap: "wrap",
-              marginBottom: "2.5rem",
+              marginBottom: "3rem",
             }}
           >
-            {/* Blend filter */}
-            <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-              {blends.map((b) => (
-                <button
-                  key={b}
-                  onClick={() => setActiveBlend(b)}
-                  style={{
-                    padding: ".4rem 1rem",
-                    border: "1px solid",
-                    borderColor:
-                      activeBlend === b ? "var(--lhb-moss)" : "rgba(200,168,130,.4)",
-                    borderRadius: "2px",
-                    background: activeBlend === b ? "var(--lhb-moss)" : "transparent",
-                    color: activeBlend === b ? "#fff" : "var(--lhb-black)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: ".7rem",
-                    letterSpacing: ".1em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    transition: "all .2s",
-                  }}
-                >
-                  {b === "all" ? "All Blends" : b.charAt(0).toUpperCase() + b.slice(1)}
-                </button>
-              ))}
-            </div>
-            <div
-              style={{
-                width: 1,
-                background: "rgba(200,168,130,.4)",
-                margin: "0 .5rem",
-              }}
-            />
-            {/* Type filter */}
-            <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-              {types.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setActiveType(t)}
-                  style={{
-                    padding: ".4rem 1rem",
-                    border: "1px solid",
-                    borderColor:
-                      activeType === t ? "var(--lhb-gold)" : "rgba(200,168,130,.4)",
-                    borderRadius: "2px",
-                    background: activeType === t ? "var(--lhb-gold)" : "transparent",
-                    color: activeType === t ? "var(--lhb-black)" : "var(--lhb-black)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: ".7rem",
-                    letterSpacing: ".1em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    transition: "all .2s",
-                  }}
-                >
-                  {t === "all"
-                    ? "All Types"
-                    : t === "prerolls"
-                    ? "Herbal Cones"
-                    : t === "herbs"
-                    ? "Loose Herbs"
-                    : "Tea Boxes"}
-                </button>
-              ))}
-            </div>
+            {[
+              { key: "all", label: "All Blends" },
+              { key: "morning", label: "Rise & Bloom — Morning" },
+              { key: "midday", label: "Heart Flow — Midday" },
+              { key: "night", label: "Dream Temple — Night" },
+            ].map((b) => (
+              <button
+                key={b.key}
+                onClick={() => setActiveBlend(b.key)}
+                style={{
+                  padding: ".45rem 1.1rem",
+                  border: "1px solid",
+                  borderColor:
+                    activeBlend === b.key ? "var(--lhb-moss)" : "rgba(0,0,0,.2)",
+                  borderRadius: "2px",
+                  background: activeBlend === b.key ? "var(--lhb-moss)" : "transparent",
+                  color: activeBlend === b.key ? "#fff" : "var(--lhb-black)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: ".72rem",
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  transition: "all .2s",
+                  fontWeight: activeBlend === b.key ? 500 : 400,
+                }}
+              >
+                {b.label}
+              </button>
+            ))}
+            {[
+              { key: "tea", label: "Tea Boxes" },
+              { key: "herbs", label: "Loose Herbs" },
+              { key: "prerolls", label: "Herbal Blends" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveType(activeType === t.key ? "all" : t.key)}
+                style={{
+                  padding: ".45rem 1.1rem",
+                  border: "1px solid",
+                  borderColor:
+                    activeType === t.key ? "var(--lhb-gold)" : "rgba(0,0,0,.2)",
+                  borderRadius: "2px",
+                  background: activeType === t.key ? "var(--lhb-gold)" : "transparent",
+                  color: "var(--lhb-black)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: ".72rem",
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  transition: "all .2s",
+                  fontWeight: activeType === t.key ? 500 : 400,
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
 
           {/* Product grid */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "1.5rem",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "2rem",
             }}
           >
             {filtered.map((p) => (
