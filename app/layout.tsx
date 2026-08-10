@@ -17,6 +17,7 @@ const jost = Jost({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://lotushouseblends.com"),
   title: "Lotus House Blends",
   description:
     "Handcrafted herbal aromatherapy blends crafted for every ritual of your day — morning, midday, and night.",
