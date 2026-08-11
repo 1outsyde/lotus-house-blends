@@ -12,7 +12,7 @@ import {
   CartItem,
 } from "@/lib/cart";
 
-// ─── CSS Variables ──────────────────────────────────────────────────────────
+// ─── CSS Variables + Component Styles ────────────────────────────────────────
 const CSS_VARS = `
   :root {
     --lhb-parchment: #e8e0cc;
@@ -25,20 +25,49 @@ const CSS_VARS = `
     --lhb-night: #7b5ea7;
     --lhb-midday: #2d4a3e;
     --lhb-morning: #8b4513;
+    --lhb-brown-dark: #3A2208;
+    --lhb-text-mid: #7A6350;
+    --lhb-text-muted: #9A8070;
+    --lhb-sage: #4A6B5A;
+    --lhb-sage-dark: #1F3830;
+    --lhb-lavender: #7b5ea7;
     --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
     --font-body: var(--font-jost), 'Jost', sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body { background: var(--lhb-parchment); color: var(--lhb-black); font-family: var(--font-body); }
-`;
 
-// ─── Blend Colors ────────────────────────────────────────────────────────────
-const blendColors: Record<string, { bg: string; label: string }> = {
-  night: { bg: "var(--lhb-night)", label: "Night Blend" },
-  midday: { bg: "var(--lhb-midday)", label: "Midday Blend" },
-  morning: { bg: "var(--lhb-morning)", label: "Morning Blend" },
-};
+  .hero-logo-wrap{margin-bottom:2rem;}
+  .hero-logo-wrap img{width:480px;max-width:90%;height:auto;mix-blend-mode:screen;}
+
+  .product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+
+  .pcard{background:var(--lhb-parchment);display:block;text-decoration:none;cursor:pointer;transition:transform .25s,box-shadow .25s;position:relative;overflow:hidden;}
+  .pcard:hover{transform:translateY(-5px);box-shadow:0 24px 60px rgba(26,18,8,.13);}
+  .pcard-img{height:280px;overflow:hidden;position:relative;background:#e8e0d0;display:flex;align-items:center;justify-content:center;}
+  .pcard-img img{width:100%;height:100%;object-fit:contain;object-position:center;padding:1.5rem;transition:transform .4s;}
+  .pcard:hover .pcard-img img{transform:scale(1.06);}
+  .ptype-tag{position:absolute;top:.9rem;left:.9rem;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;padding:.28rem .7rem;background:rgba(242,235,217,.93);color:var(--lhb-text-mid);font-weight:400;}
+  .pcard-body{padding:1.4rem 1.4rem 1.6rem;}
+  .pcard-name{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:500;color:var(--lhb-brown-dark);line-height:1.25;margin-bottom:.45rem;}
+  .pcard-desc{font-size:.76rem;color:var(--lhb-text-muted);line-height:1.75;font-weight:300;margin-bottom:1.15rem;}
+  .pcard-footer{display:flex;align-items:center;justify-content:space-between;padding-top:.9rem;border-top:1px solid rgba(90,62,30,.1);}
+  .pcard-price{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:500;color:var(--lhb-brown-dark);display:block;line-height:1;}
+  .pcard-bundle{font-size:.66rem;color:var(--lhb-sage);font-weight:400;margin-top:.15rem;display:block;letter-spacing:.03em;}
+  .pcard-add{background:var(--lhb-moss);border:none;color:#F2EBD9;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.3rem;font-weight:300;transition:background .18s,transform .12s;flex-shrink:0;}
+  .pcard-add:hover{background:var(--lhb-sage-dark);transform:scale(1.08);}
+  .pcard::after{content:'View Product';position:absolute;bottom:0;left:0;right:0;background:var(--lhb-lavender);color:#fff;text-align:center;padding:.7rem;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;transform:translateY(100%);transition:transform .22s;}
+  .pcard:hover::after{transform:translateY(0);}
+
+  .blend-group-hdr{display:flex;align-items:baseline;gap:1.25rem;margin-bottom:2rem;padding-bottom:.9rem;border-bottom:1px solid rgba(90,62,30,.12);}
+  .time-badge{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;font-weight:400;padding:.28rem .8rem;}
+  .badge-morning{background:#FFF3E0;color:#8A5010;}
+  .badge-midday{background:#EAF2E8;color:#2A5C28;}
+  .badge-night{background:#EDE7F6;color:#4A2E8A;}
+  .blend-group-title{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:400;color:var(--lhb-brown-dark);}
+  .blend-group-sub{font-size:.75rem;color:var(--lhb-text-muted);font-weight:300;margin-left:auto;font-style:italic;}
+`;
 
 // ─── Type Labels ─────────────────────────────────────────────────────────────
 const typeLabels: Record<string, string> = {
@@ -46,6 +75,31 @@ const typeLabels: Record<string, string> = {
   herbs: "Loose Herbs",
   tea: "Tea Box",
 };
+
+// ─── Blend Groups ─────────────────────────────────────────────────────────────
+const blendGroups = [
+  {
+    key: "night",
+    title: "Dream Temple",
+    badgeClass: "badge-night",
+    badgeLabel: "Night",
+    sub: "Ritual for rest & dream clarity",
+  },
+  {
+    key: "midday",
+    title: "Heart Flow",
+    badgeClass: "badge-midday",
+    badgeLabel: "Midday",
+    sub: "Ritual for balance & clarity",
+  },
+  {
+    key: "morning",
+    title: "Rise & Bloom",
+    badgeClass: "badge-morning",
+    badgeLabel: "Morning",
+    sub: "Ritual for focus & vitality",
+  },
+];
 
 // ─── Cart Drawer ─────────────────────────────────────────────────────────────
 function CartDrawer({
@@ -345,8 +399,6 @@ function CartDrawer({
 
 // ─── Product Card ────────────────────────────────────────────────────────────
 function ProductCard({ product }: { product: Product }) {
-  const blend = blendColors[product.blend];
-
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     addToCart({
@@ -359,171 +411,31 @@ function ProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <Link
-      href={`/${product.slug}`}
-      style={{ textDecoration: "none", color: "inherit", display: "block" }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "3px",
-          overflow: "hidden",
-          transition: "transform .2s, box-shadow .2s",
-          cursor: "pointer",
-          border: "1px solid rgba(200,168,130,.2)",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLDivElement).style.transform =
-            "translateY(-4px)";
-          (e.currentTarget as HTMLDivElement).style.boxShadow =
-            "0 12px 32px rgba(0,0,0,.1)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-          (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-        }}
-      >
-        {/* Image */}
-        <div
-          style={{
-            position: "relative",
-            paddingBottom: "100%",
-            background: "var(--lhb-parchment-dark)",
-            overflow: "hidden",
+    <Link href={`/${product.slug}`} className="pcard">
+      <div className="pcard-img">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={product.image}
+          alt={product.name}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
           }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={product.image}
-            alt={product.name}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              position: "absolute",
-              inset: 0,
-            }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-          {/* Blend badge */}
-          <div
-            style={{
-              position: "absolute",
-              top: 12,
-              left: 12,
-              padding: ".2rem .65rem",
-              borderRadius: "2px",
-              background: blend?.bg ?? "var(--lhb-moss)",
-              color: "#fff",
-              fontSize: ".6rem",
-              fontFamily: "var(--font-body)",
-              fontWeight: 500,
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
-            }}
-          >
-            {blend?.label ?? product.blend}
+        />
+        <span className="ptype-tag">
+          {typeLabels[product.type] ?? product.type}
+        </span>
+      </div>
+      <div className="pcard-body">
+        <div className="pcard-name">{product.name}</div>
+        <div className="pcard-desc">{product.description}</div>
+        <div className="pcard-footer">
+          <div>
+            <span className="pcard-price">${product.price.toFixed(2)}</span>
+            <span className="pcard-bundle">{product.bundleLabel}</span>
           </div>
-        </div>
-
-        {/* Content */}
-        <div style={{ padding: "1.1rem" }}>
-          <div
-            style={{
-              fontSize: ".65rem",
-              color: "var(--lhb-gold)",
-              fontFamily: "var(--font-body)",
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
-              marginBottom: ".3rem",
-            }}
-          >
-            {typeLabels[product.type] ?? product.type}
-          </div>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1.15rem",
-              fontWeight: 500,
-              marginBottom: ".4rem",
-              lineHeight: 1.3,
-            }}
-          >
-            {product.name}
-          </h3>
-          <p
-            style={{
-              fontSize: ".8rem",
-              color: "#666",
-              lineHeight: 1.55,
-              marginBottom: ".9rem",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {product.description}
-          </p>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "1.25rem",
-                  fontWeight: 600,
-                  color: "var(--lhb-black)",
-                }}
-              >
-                ${product.price.toFixed(2)}
-              </div>
-              <div
-                style={{
-                  fontSize: ".6rem",
-                  color: "var(--lhb-moss)",
-                  letterSpacing: ".06em",
-                  fontFamily: "var(--font-body)",
-                }}
-              >
-                {product.bundleLabel}
-              </div>
-            </div>
-            <button
-              onClick={handleAdd}
-              style={{
-                padding: ".5rem 1rem",
-                background: "var(--lhb-moss)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "2px",
-                cursor: "pointer",
-                fontFamily: "var(--font-body)",
-                fontSize: ".7rem",
-                letterSpacing: ".08em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                transition: "background .2s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "var(--lhb-moss-light)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "var(--lhb-moss)";
-              }}
-            >
-              Add to Cart
-            </button>
-          </div>
+          <button className="pcard-add" onClick={handleAdd} aria-label="Add to cart">
+            +
+          </button>
         </div>
       </div>
     </Link>
@@ -534,8 +446,6 @@ function ProductCard({ product }: { product: Product }) {
 export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [activeBlend, setActiveBlend] = useState<string>("all");
-  const [activeType, setActiveType] = useState<string>("all");
 
   const refreshCount = useCallback(() => {
     setCartCount(getCart().reduce((s, i) => s + i.qty, 0));
@@ -545,15 +455,6 @@ export default function HomePage() {
     refreshCount();
     return subscribe(refreshCount);
   }, [refreshCount]);
-
-  const blends = ["all", "morning", "midday", "night"];
-  const types = ["all", "prerolls", "herbs", "tea"];
-
-  const filtered = PRODUCTS.filter((p) => {
-    if (activeBlend !== "all" && p.blend !== activeBlend) return false;
-    if (activeType !== "all" && p.type !== activeType) return false;
-    return true;
-  });
 
   return (
     <>
@@ -733,13 +634,12 @@ export default function HomePage() {
             textAlign: "center",
           }}
         >
-          {/* Logo mark placeholder — swap for real SVG */}
-          <div style={{ marginBottom: "1.5rem" }}>
+          {/* Logo mark */}
+          <div className="hero-logo-wrap">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo-dark.png"
               alt="Lotus House Blends logo"
-              style={{ width: 120, height: "auto" }}
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
@@ -757,7 +657,7 @@ export default function HomePage() {
               marginBottom: "1.5rem",
             }}
           >
-            Presented by Outsyde &nbsp;·&nbsp; Wellness Vendor
+            Herbal &nbsp;·&nbsp; Botanical &nbsp;·&nbsp; Intentional
           </div>
 
           <h1
@@ -1044,101 +944,28 @@ export default function HomePage() {
           </div>
 
           {/* Divider */}
-          <div style={{ borderTop: "1px solid rgba(0,0,0,.12)", marginBottom: "2rem" }} />
+          <div style={{ borderTop: "1px solid rgba(0,0,0,.12)", marginBottom: "3rem" }} />
 
-          {/* Filters — matching screenshot style: outlined pill tabs */}
-          <div
-            style={{
-              display: "flex",
-              gap: ".75rem",
-              flexWrap: "wrap",
-              marginBottom: "3rem",
-            }}
-          >
-            {[
-              { key: "all", label: "All Blends" },
-              { key: "morning", label: "Rise & Bloom — Morning" },
-              { key: "midday", label: "Heart Flow — Midday" },
-              { key: "night", label: "Dream Temple — Night" },
-            ].map((b) => (
-              <button
-                key={b.key}
-                onClick={() => setActiveBlend(b.key)}
-                style={{
-                  padding: ".45rem 1.1rem",
-                  border: "1px solid",
-                  borderColor:
-                    activeBlend === b.key ? "var(--lhb-moss)" : "rgba(0,0,0,.2)",
-                  borderRadius: "2px",
-                  background: activeBlend === b.key ? "var(--lhb-moss)" : "transparent",
-                  color: activeBlend === b.key ? "#fff" : "var(--lhb-black)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: ".72rem",
-                  letterSpacing: ".08em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  transition: "all .2s",
-                  fontWeight: activeBlend === b.key ? 500 : 400,
-                }}
-              >
-                {b.label}
-              </button>
-            ))}
-            {[
-              { key: "tea", label: "Tea Boxes" },
-              { key: "herbs", label: "Loose Herbs" },
-              { key: "prerolls", label: "Herbal Blends" },
-            ].map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setActiveType(activeType === t.key ? "all" : t.key)}
-                style={{
-                  padding: ".45rem 1.1rem",
-                  border: "1px solid",
-                  borderColor:
-                    activeType === t.key ? "var(--lhb-gold)" : "rgba(0,0,0,.2)",
-                  borderRadius: "2px",
-                  background: activeType === t.key ? "var(--lhb-gold)" : "transparent",
-                  color: "var(--lhb-black)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: ".72rem",
-                  letterSpacing: ".08em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  transition: "all .2s",
-                  fontWeight: activeType === t.key ? 500 : 400,
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Product grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "2rem",
-            }}
-          >
-            {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-
-          {filtered.length === 0 && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "3rem",
-                color: "#888",
-                fontFamily: "var(--font-body)",
-              }}
-            >
-              No products match that filter combination.
-            </div>
-          )}
+          {/* Blend groups */}
+          {blendGroups.map((group) => {
+            const groupProducts = PRODUCTS.filter((p) => p.blend === group.key);
+            return (
+              <div key={group.key} style={{ marginBottom: "4rem" }}>
+                <div className="blend-group-hdr">
+                  <span className={`time-badge ${group.badgeClass}`}>
+                    {group.badgeLabel}
+                  </span>
+                  <span className="blend-group-title">{group.title}</span>
+                  <span className="blend-group-sub">{group.sub}</span>
+                </div>
+                <div className="product-grid">
+                  {groupProducts.map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
