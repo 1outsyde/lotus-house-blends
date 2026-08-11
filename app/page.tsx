@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import { PRODUCTS, Product } from "@/lib/products";
 import {
   addToCart,
@@ -172,6 +173,9 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 export default function HomePage() {
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.isAdmin;
+
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<string>("all");
@@ -203,9 +207,29 @@ export default function HomePage() {
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
           {[["#shop","Shop"],["about","Our Story"],["wholesale","Wholesale"]].map(([href, label]) => (
-  <Link key={label} href={href.startsWith("#") ? href : `/${href}`} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
-))}
-<Link href="/login" style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>Login</Link>
+            <Link key={label} href={href.startsWith("#") ? href : `/${href}`} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
+          ))}
+
+          {session ? (
+            <>
+              {isAdmin && (
+                <Link href="/admin/dashboard" style={{ color: "var(--lhb-gold)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>
+                  Admin
+                </Link>
+              )}
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                style={{ background: "none", border: "none", color: "rgba(255,255,255,.8)", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link href="/login" style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>
+              Login
+            </Link>
+          )}
+
           <button onClick={() => setCartOpen(true)} style={{ background: "none", border: "1px solid rgba(200,168,130,.5)", borderRadius: "2px", color: "var(--lhb-gold)", cursor: "pointer", padding: ".45rem 1rem", fontFamily: "var(--font-body)", fontSize: ".75rem", letterSpacing: ".1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: ".4rem" }} aria-label="Open cart">
             <span>Cart</span>
             {cartCount > 0 && <span style={{ background: "var(--lhb-moss)", color: "#fff", borderRadius: "999px", width: 18, height: 18, fontSize: ".65rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>{cartCount}</span>}
@@ -289,14 +313,12 @@ export default function HomePage() {
           </div>
           <div style={{ borderTop: "1px solid rgba(0,0,0,.12)", marginBottom: "3rem" }} />
 
-          {/* Filter tabs */}
           <div className="filter-row">
             {([["all","All Blends"],["morning","Rise & Bloom — Morning"],["midday","Heart Flow — Midday"],["night","Dream Temple — Night"],["tea","Tea Boxes"],["herbs","Loose Herbs"],["prerolls","Herbal Blends"]] as [string,string][]).map(([key, label]) => (
               <button key={key} className={`ftab${activeFilter === key ? " active" : ""}`} onClick={() => setActiveFilter(key)}>{label}</button>
             ))}
           </div>
 
-          {/* Blend groups */}
           {blendGroups.map((group) => {
             const groupProducts = PRODUCTS.filter((p) => p.blend === group.key);
             return (
