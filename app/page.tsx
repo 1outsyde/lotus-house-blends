@@ -203,8 +203,9 @@ export default function HomePage() {
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
           {[["#shop","Shop"],["about","Our Story"],["wholesale","Wholesale"]].map(([href, label]) => (
-            <Link key={label} href={href.startsWith("#") ? href : `/${href}`} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
-          ))}
+  <Link key={label} href={href.startsWith("#") ? href : `/${href}`} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
+))}
+<Link href="/login" style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>Login</Link>
           <button onClick={() => setCartOpen(true)} style={{ background: "none", border: "1px solid rgba(200,168,130,.5)", borderRadius: "2px", color: "var(--lhb-gold)", cursor: "pointer", padding: ".45rem 1rem", fontFamily: "var(--font-body)", fontSize: ".75rem", letterSpacing: ".1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: ".4rem" }} aria-label="Open cart">
             <span>Cart</span>
             {cartCount > 0 && <span style={{ background: "var(--lhb-moss)", color: "#fff", borderRadius: "999px", width: 18, height: 18, fontSize: ".65rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>{cartCount}</span>}
