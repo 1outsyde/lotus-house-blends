@@ -489,12 +489,12 @@ export default function HomePage() {
           height: 64,
         }}
       >
-        <Link href="/" style={{ display: "flex", alignItems: "center", height: "100%" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", height: "100%", padding: "4px 0" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-dark.png"
             alt="Lotus House Blends"
-            style={{ height: "48px", width: "auto", display: "block" }}
+            style={{ height: "52px", width: "auto", display: "block", objectFit: "contain" }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         </Link>
