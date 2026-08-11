@@ -67,6 +67,11 @@ const CSS_VARS = `
   .badge-night{background:#EDE7F6;color:#4A2E8A;}
   .blend-group-title{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:400;color:var(--lhb-brown-dark);}
   .blend-group-sub{font-size:.75rem;color:var(--lhb-text-muted);font-weight:300;margin-left:auto;font-style:italic;}
+
+  .filter-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:3.5rem;}
+  .ftab{background:transparent;border:1px solid rgba(90,62,30,.2);color:var(--lhb-text-muted);padding:.55rem 1.25rem;font-family:'Jost',sans-serif;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:400;cursor:pointer;transition:all .18s;}
+  .ftab:hover{border-color:var(--lhb-lavender);color:var(--lhb-lavender);}
+  .ftab.active{background:var(--lhb-moss);border-color:var(--lhb-moss);color:#F2EBD9;}
 `;
 
 // ─── Type Labels ─────────────────────────────────────────────────────────────
@@ -446,6 +451,7 @@ function ProductCard({ product }: { product: Product }) {
 export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<string>("all");
 
   const refreshCount = useCallback(() => {
     setCartCount(getCart().reduce((s, i) => s + i.qty, 0));
@@ -455,6 +461,14 @@ export default function HomePage() {
     refreshCount();
     return subscribe(refreshCount);
   }, [refreshCount]);
+
+  const groupHidden = (blendKey: string) =>
+    ["morning", "midday", "night"].includes(activeFilter) &&
+    activeFilter !== blendKey;
+
+  const cardHidden = (type: string) =>
+    ["tea", "herbs", "prerolls"].includes(activeFilter) &&
+    activeFilter !== type;
 
   return (
     <>
@@ -475,13 +489,13 @@ export default function HomePage() {
           height: 64,
         }}
       >
-        <Link href="/">
+        <Link href="/" style={{ display: "flex", alignItems: "center", height: "100%" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-dark.png"
             alt="Lotus House Blends"
-            width={140}
-            style={{ display: "block" }}
+            style={{ height: "48px", width: "auto", display: "block" }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         </Link>
         <div
@@ -868,7 +882,7 @@ export default function HomePage() {
       {/* ── VALUES PILLARS ──────────────────────────────────────────────── */}
       <section
         style={{
-          background: "var(--lhb-black)",
+          background: "#2A1E0E",
           padding: "4rem 2rem",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -946,11 +960,32 @@ export default function HomePage() {
           {/* Divider */}
           <div style={{ borderTop: "1px solid rgba(0,0,0,.12)", marginBottom: "3rem" }} />
 
+          {/* Filter tabs */}
+          <div className="filter-row">
+            {([
+              ["all", "All Blends"],
+              ["morning", "Rise & Bloom — Morning"],
+              ["midday", "Heart Flow — Midday"],
+              ["night", "Dream Temple — Night"],
+              ["tea", "Tea Boxes"],
+              ["herbs", "Loose Herbs"],
+              ["prerolls", "Herbal Blends"],
+            ] as [string, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                className={`ftab${activeFilter === key ? " active" : ""}`}
+                onClick={() => setActiveFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {/* Blend groups */}
           {blendGroups.map((group) => {
             const groupProducts = PRODUCTS.filter((p) => p.blend === group.key);
             return (
-              <div key={group.key} style={{ marginBottom: "4rem" }}>
+              <div key={group.key} style={{ marginBottom: "4rem", display: groupHidden(group.key) ? "none" : "block" }}>
                 <div className="blend-group-hdr">
                   <span className={`time-badge ${group.badgeClass}`}>
                     {group.badgeLabel}
@@ -960,7 +995,9 @@ export default function HomePage() {
                 </div>
                 <div className="product-grid">
                   {groupProducts.map((p) => (
-                    <ProductCard key={p.id} product={p} />
+                    <div key={p.id} style={{ display: cardHidden(p.type) ? "none" : "block" }}>
+                      <ProductCard product={p} />
+                    </div>
                   ))}
                 </div>
               </div>
