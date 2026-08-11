@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -13,107 +13,146 @@ import {
 } from '@stripe/react-stripe-js';
 import { getCart, clearCart, CartItem } from '@/lib/cart';
 
+// Initialize Stripe once outside component tree
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const FONTS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500&display=swap');
-`;
-
-const C = {
-  parchment: '#F2EBD9',
-  cream: '#EDE3CC',
-  moss: '#1E3020',
-  brownDark: '#2A1E0E',
-  brownLight: '#C8A882',
-  lavender: '#7B6BAF',
-  textMid: '#4A3820',
-  textMuted: '#7A6A50',
-  sage: '#4A6741',
-  gold: '#B8831A',
-} as const;
-
-const FONT_DISPLAY = "'Cormorant Garamond', Georgia, serif";
-const FONT_BODY = "'Jost', sans-serif";
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '.75rem 1rem',
-  border: `1px solid rgba(90,62,30,.25)`,
-  background: C.parchment,
-  fontFamily: FONT_BODY,
-  fontSize: '.9rem',
-  color: C.brownDark,
-  outline: 'none',
-  borderRadius: 0,
-  transition: 'border-color .2s',
-  boxSizing: 'border-box',
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const T = {
+  parchment:   '#F2EBD9',
+  cream:       '#EDE3CC',
+  moss:        '#1E3020',
+  brownDark:   '#2A1E0E',
+  brownLight:  '#C8A882',
+  textMid:     '#4A3820',
+  textMuted:   '#7A6A50',
+  sage:        '#4A6741',
+  gold:        '#B8831A',
+  border:      'rgba(90,62,30,.25)',
+  borderFaint: 'rgba(90,62,30,.12)',
+  borderMid:   'rgba(90,62,30,.15)',
 };
 
-const labelStyle: React.CSSProperties = {
+const DISPLAY = "var(--font-cormorant), 'Cormorant Garamond', Georgia, serif";
+const BODY    = "var(--font-jost), 'Jost', sans-serif";
+
+// ─── Shared style objects ─────────────────────────────────────────────────────
+const labelSt: React.CSSProperties = {
   display: 'block',
-  fontFamily: FONT_BODY,
-  fontSize: '.7rem',
+  fontFamily: BODY,
+  fontSize: '.72rem',
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: C.textMuted,
+  color: T.textMuted,
   marginBottom: '.4rem',
 };
 
-const sectionHeadingStyle: React.CSSProperties = {
-  fontFamily: FONT_DISPLAY,
+const inputBase: React.CSSProperties = {
+  width: '100%',
+  padding: '.75rem 1rem',
+  border: `1px solid ${T.border}`,
+  background: T.parchment,
+  fontFamily: BODY,
+  fontSize: '.9rem',
+  color: T.brownDark,
+  outline: 'none',
+  borderRadius: 0,
+  boxSizing: 'border-box',
+};
+
+const sectionHead: React.CSSProperties = {
+  fontFamily: DISPLAY,
   fontSize: '1.4rem',
-  color: C.brownDark,
+  color: T.brownDark,
   fontWeight: 400,
   marginBottom: '1.25rem',
   paddingBottom: '.6rem',
-  borderBottom: `1px solid rgba(90,62,30,.15)`,
+  borderBottom: `1px solid ${T.borderMid}`,
+  margin: '0 0 1.25rem',
 };
 
-// ─── Field helpers ────────────────────────────────────────────────────────────
-function Field({
-  id,
-  label,
-  type = 'text',
-  value,
-  onChange,
-  required,
-  placeholder,
-  autoComplete,
+const fieldWrap: React.CSSProperties = { marginBottom: '1rem' };
+
+// ─── Input component ──────────────────────────────────────────────────────────
+function Input({
+  id, label, type = 'text', value, onChange,
+  required, placeholder, autoComplete, maxLength,
 }: {
-  id: string;
-  label: string;
-  type?: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-  placeholder?: string;
-  autoComplete?: string;
+  id: string; label: string; type?: string; value: string;
+  onChange: (v: string) => void; required?: boolean;
+  placeholder?: string; autoComplete?: string; maxLength?: number;
 }) {
   const [focused, setFocused] = useState(false);
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label htmlFor={id} style={labelStyle}>
-        {label}
-      </label>
+    <div style={fieldWrap}>
+      <label htmlFor={id} style={labelSt}>{label}</label>
       <input
-        id={id}
-        type={type}
-        value={value}
+        id={id} type={type} value={value} required={required}
+        placeholder={placeholder} autoComplete={autoComplete}
+        maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
-        required={required}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{
-          ...inputStyle,
-          borderColor: focused ? C.moss : 'rgba(90,62,30,.25)',
-        }}
+        style={{ ...inputBase, borderColor: focused ? T.moss : T.border }}
       />
     </div>
+  );
+}
+
+// ─── Address block ────────────────────────────────────────────────────────────
+function AddressFields({
+  prefix, values, setters,
+}: {
+  prefix: string;
+  values: { name: string; line1: string; line2: string; city: string; state: string; zip: string };
+  setters: { setName: (v:string)=>void; setLine1: (v:string)=>void; setLine2: (v:string)=>void;
+             setCity: (v:string)=>void; setState: (v:string)=>void; setZip: (v:string)=>void };
+}) {
+  const [fCity, setFCity] = useState(false);
+  const [fState, setFState] = useState(false);
+  const [fZip, setFZip] = useState(false);
+
+  return (
+    <>
+      <Input id={`${prefix}Name`} label="Full Name on Package" value={values.name}
+        onChange={setters.setName} required autoComplete={`${prefix} name`} />
+      <Input id={`${prefix}Line1`} label="Address Line 1" value={values.line1}
+        onChange={setters.setLine1} required autoComplete={`${prefix} address-line1`} />
+      <Input id={`${prefix}Line2`} label="Address Line 2 (optional)" value={values.line2}
+        onChange={setters.setLine2} autoComplete={`${prefix} address-line2`} />
+
+      {/* City / State / ZIP row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 120px', gap: '1rem' }}>
+        <div style={fieldWrap}>
+          <label htmlFor={`${prefix}City`} style={labelSt}>City</label>
+          <input id={`${prefix}City`} type="text" value={values.city} required
+            autoComplete={`${prefix} address-level2`}
+            onChange={(e) => setters.setCity(e.target.value)}
+            onFocus={() => setFCity(true)} onBlur={() => setFCity(false)}
+            style={{ ...inputBase, borderColor: fCity ? T.moss : T.border }}
+          />
+        </div>
+        <div style={fieldWrap}>
+          <label htmlFor={`${prefix}State`} style={labelSt}>State</label>
+          <input id={`${prefix}State`} type="text" value={values.state} required
+            maxLength={2} placeholder="CA" autoComplete={`${prefix} address-level1`}
+            onChange={(e) => setters.setState(e.target.value.slice(0,2).toUpperCase())}
+            onFocus={() => setFState(true)} onBlur={() => setFState(false)}
+            style={{ ...inputBase, borderColor: fState ? T.moss : T.border }}
+          />
+        </div>
+        <div style={fieldWrap}>
+          <label htmlFor={`${prefix}Zip`} style={labelSt}>ZIP Code</label>
+          <input id={`${prefix}Zip`} type="text" value={values.zip} required
+            placeholder="90210" autoComplete={`${prefix} postal-code`}
+            onChange={(e) => setters.setZip(e.target.value)}
+            onFocus={() => setFZip(true)} onBlur={() => setFZip(false)}
+            style={{ ...inputBase, borderColor: fZip ? T.moss : T.border }}
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -122,92 +161,33 @@ function OrderSummary({ items }: { items: CartItem[] }) {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
 
   return (
-    <div
-      style={{
-        position: 'sticky',
-        top: '2rem',
-        background: C.parchment,
-        padding: '2rem',
-        border: `1px solid rgba(90,62,30,.12)`,
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: FONT_DISPLAY,
-          fontSize: '1.5rem',
-          color: C.brownDark,
-          fontWeight: 400,
-          marginBottom: '1.25rem',
-          margin: '0 0 1.25rem',
-        }}
-      >
-        Your Order
-      </h2>
+    <div style={{ position: 'sticky', top: '2rem' }}>
+      <h2 style={{ ...sectionHead, marginBottom: '1.5rem' }}>Your Order</h2>
 
       <div>
         {items.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              display: 'flex',
-              gap: '1rem',
-              padding: '.85rem 0',
-              borderBottom: `1px solid rgba(90,62,30,.08)`,
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                flexShrink: 0,
-                background: '#e8e0d0',
-                border: `1px solid rgba(90,62,30,.1)`,
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <Image
-                src={item.image}
-                alt={item.name}
-                fill
+          <div key={item.id} style={{
+            display: 'flex', gap: '1rem', padding: '.85rem 0',
+            borderBottom: `1px solid ${T.borderFaint}`, alignItems: 'center',
+          }}>
+            <div style={{
+              width: 48, height: 48, flexShrink: 0, background: '#e8e0d0',
+              border: `1px solid ${T.borderFaint}`, position: 'relative', overflow: 'hidden',
+            }}>
+              <Image src={item.image} alt={item.name} fill
                 style={{ objectFit: 'contain' }}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontFamily: FONT_DISPLAY,
-                  fontSize: '1rem',
-                  color: C.brownDark,
-                  lineHeight: 1.3,
-                  marginBottom: '.2rem',
-                }}
-              >
+              <div style={{ fontFamily: DISPLAY, fontSize: '1rem', color: T.brownDark, lineHeight: 1.3 }}>
                 {item.name}
               </div>
-              <div
-                style={{
-                  fontFamily: FONT_BODY,
-                  fontSize: '.75rem',
-                  color: C.textMuted,
-                }}
-              >
+              <div style={{ fontFamily: BODY, fontSize: '.8rem', color: T.textMuted, marginTop: '.15rem' }}>
                 Qty: {item.qty}
               </div>
             </div>
-            <div
-              style={{
-                fontFamily: FONT_BODY,
-                fontSize: '.9rem',
-                color: C.brownDark,
-                marginLeft: 'auto',
-                flexShrink: 0,
-              }}
-            >
+            <div style={{ fontFamily: BODY, fontSize: '.9rem', color: T.brownDark, flexShrink: 0 }}>
               ${(item.price * item.qty).toFixed(2)}
             </div>
           </div>
@@ -215,643 +195,372 @@ function OrderSummary({ items }: { items: CartItem[] }) {
       </div>
 
       <div style={{ marginTop: '1.25rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: '.6rem',
-            fontFamily: FONT_BODY,
-            fontSize: '.8rem',
-            color: C.textMid,
-          }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.5rem',
+          fontFamily: BODY, fontSize: '.85rem', color: T.textMid }}>
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: '1rem',
-            fontFamily: FONT_BODY,
-            fontSize: '.8rem',
-            color: C.textMid,
-          }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem',
+          fontFamily: BODY, fontSize: '.85rem', color: T.textMid }}>
           <span>Shipping</span>
-          <span style={{ color: C.sage }}>Free</span>
+          <span style={{ color: T.sage }}>Free</span>
         </div>
 
-        <div
-          style={{
-            borderTop: `1px solid rgba(90,62,30,.15)`,
-            paddingTop: '.85rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-          }}
-        >
-          <span
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: '1.2rem',
-              color: C.brownDark,
-            }}
-          >
+        <div style={{ borderTop: `1px solid ${T.borderMid}`, paddingTop: '.85rem',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span style={{ fontFamily: DISPLAY, fontSize: '1.2rem', fontWeight: 400, color: T.brownDark }}>
             Total
           </span>
-          <span
-            style={{
-              fontFamily: FONT_DISPLAY,
-              fontSize: '1.4rem',
-              fontWeight: 600,
-              color: C.brownDark,
-            }}
-          >
+          <span style={{ fontFamily: DISPLAY, fontSize: '1.5rem', fontWeight: 600, color: T.brownDark }}>
             ${subtotal.toFixed(2)}
           </span>
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: '1.5rem',
-          textAlign: 'center',
-          fontFamily: FONT_BODY,
-          fontSize: '.7rem',
-          color: C.textMuted,
-        }}
-      >
-        🔒 Secure checkout powered by Stripe
+      {/* Secure badge */}
+      <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', gap: '.4rem' }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.textMuted}
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span style={{ fontFamily: BODY, fontSize: '.72rem', color: T.textMuted, letterSpacing: '.04em' }}>
+          Secure checkout powered by Stripe
+        </span>
       </div>
     </div>
   );
 }
 
-// ─── Checkout Form ────────────────────────────────────────────────────────────
+// ─── Main checkout form ───────────────────────────────────────────────────────
 function CheckoutForm() {
-  const router = useRouter();
-  const stripe = useStripe();
+  const router  = useRouter();
+  const stripe  = useStripe();
   const elements = useElements();
 
   const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [cardFocused, setCardFocused] = useState(false);
 
   // Contact
-  const [customerName, setCustomerName] = useState('');
+  const [customerName,  setCustomerName]  = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
 
   // Shipping
-  const [shippingName, setShippingName] = useState('');
-  const [shippingLine1, setShippingLine1] = useState('');
-  const [shippingLine2, setShippingLine2] = useState('');
-  const [shippingCity, setShippingCity] = useState('');
-  const [shippingState, setShippingState] = useState('');
-  const [shippingZip, setShippingZip] = useState('');
+  const [shipName,  setShipName]  = useState('');
+  const [shipLine1, setShipLine1] = useState('');
+  const [shipLine2, setShipLine2] = useState('');
+  const [shipCity,  setShipCity]  = useState('');
+  const [shipState, setShipState] = useState('');
+  const [shipZip,   setShipZip]   = useState('');
 
   // Billing
   const [billingSame, setBillingSame] = useState(true);
-  const [billingName, setBillingName] = useState('');
-  const [billingLine1, setBillingLine1] = useState('');
-  const [billingLine2, setBillingLine2] = useState('');
-  const [billingCity, setBillingCity] = useState('');
-  const [billingState, setBillingState] = useState('');
-  const [billingZip, setBillingZip] = useState('');
+  const [billName,  setBillName]  = useState('');
+  const [billLine1, setBillLine1] = useState('');
+  const [billLine2, setBillLine2] = useState('');
+  const [billCity,  setBillCity]  = useState('');
+  const [billState, setBillState] = useState('');
+  const [billZip,   setBillZip]   = useState('');
 
   // Payment
   const [cardholderName, setCardholderName] = useState('');
+  const [cardFocused, setCardFocused] = useState(false);
+
+  // UI state
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+  const [btnHover, setBtnHover] = useState(false);
 
   useEffect(() => {
     const cart = getCart();
-    if (cart.length === 0) {
-      router.push('/');
-      return;
-    }
+    if (cart.length === 0) { router.push('/'); return; }
     setItems(cart);
   }, [router]);
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const subtotal     = items.reduce((s, i) => s + i.price * i.qty, 0);
   const subtotalCents = Math.round(subtotal * 100);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
-
     setLoading(true);
     setError('');
 
     try {
-      // 1. Create PaymentIntent
-      const checkoutRes = await fetch('/api/checkout', {
+      // Step 1 — create PaymentIntent
+      const coRes  = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: getCart(), customerEmail }),
       });
-      const checkoutData = await checkoutRes.json();
-      if (!checkoutRes.ok || !checkoutData.clientSecret) {
-        throw new Error(checkoutData.error ?? 'Failed to initialize payment.');
-      }
-      const { clientSecret, paymentIntentId } = checkoutData as {
-        clientSecret: string;
-        paymentIntentId: string;
-      };
+      const coData = await coRes.json() as { clientSecret?: string; paymentIntentId?: string; error?: string };
+      if (!coRes.ok || !coData.clientSecret) throw new Error(coData.error ?? 'Failed to create payment.');
 
-      // 2. Confirm card payment
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error('Card element not found.');
-
-      const result = await stripe.confirmCardPayment(clientSecret, {
+      // Step 2 — confirm card
+      const card = elements.getElement(CardElement);
+      if (!card) throw new Error('Card element not found.');
+      const result = await stripe.confirmCardPayment(coData.clientSecret, {
         payment_method: {
-          card: cardElement,
+          card,
           billing_details: { name: cardholderName, email: customerEmail },
         },
       });
+      if (result.error) { setError(result.error.message ?? 'Payment failed.'); setLoading(false); return; }
 
-      if (result.error) {
-        setError(result.error.message ?? 'Payment failed.');
-        setLoading(false);
-        return;
-      }
-
-      // 3. Save order
-      const orderRes = await fetch('/api/orders', {
+      // Step 3 — save order
+      const orRes  = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          paymentIntentId,
-          customerName,
-          customerEmail,
-          shippingName,
-          shippingLine1,
-          shippingLine2,
-          shippingCity,
-          shippingState,
-          shippingZip,
-          shippingCountry: 'US',
+          paymentIntentId: coData.paymentIntentId,
+          customerName, customerEmail,
+          shippingName: shipName,   shippingLine1: shipLine1,
+          shippingLine2: shipLine2, shippingCity: shipCity,
+          shippingState: shipState, shippingZip: shipZip,
           billingSameAsShipping: billingSame,
-          billingName: billingSame ? shippingName : billingName,
-          billingLine1: billingSame ? shippingLine1 : billingLine1,
-          billingLine2: billingSame ? shippingLine2 : billingLine2,
-          billingCity: billingSame ? shippingCity : billingCity,
-          billingState: billingSame ? shippingState : billingState,
-          billingZip: billingSame ? shippingZip : billingZip,
-          billingCountry: 'US',
-          items: getCart(),
-          subtotalCents,
-          totalCents: subtotalCents,
+          billingName:  billingSame ? shipName  : billName,
+          billingLine1: billingSame ? shipLine1 : billLine1,
+          billingLine2: billingSame ? shipLine2 : billLine2,
+          billingCity:  billingSame ? shipCity  : billCity,
+          billingState: billingSame ? shipState : billState,
+          billingZip:   billingSame ? shipZip   : billZip,
+          items: getCart(), subtotalCents, totalCents: subtotalCents,
         }),
       });
-      const orderData = await orderRes.json();
-      if (!orderRes.ok) {
-        throw new Error(orderData.error ?? 'Failed to save order.');
-      }
-      const { orderId } = orderData as { orderId: string };
+      const orData = await orRes.json() as { orderId?: string; error?: string };
+      if (!orRes.ok) throw new Error(orData.error ?? 'Failed to save order.');
 
-      // 4. Clear cart and redirect
+      // Step 4 — clear and redirect
       clearCart();
-      router.push(`/success?orderId=${orderId}`);
+      router.push(`/success?orderId=${orData.orderId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
       setLoading(false);
     }
   };
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '6rem 2rem', fontFamily: BODY, color: T.textMuted }}>
+        <p style={{ marginBottom: '1.5rem', fontSize: '1rem' }}>Your cart is empty.</p>
+        <Link href="/#shop" style={{
+          display: 'inline-block', padding: '.75rem 2rem', background: T.moss,
+          color: T.parchment, textDecoration: 'none', fontFamily: BODY,
+          fontSize: '.75rem', letterSpacing: '.12em', textTransform: 'uppercase',
+        }}>Shop the Collection</Link>
+      </div>
+    );
+  }
 
   return (
     <>
-      <style>{FONTS}</style>
+      {/* Mobile responsive */}
       <style>{`
-        * { box-sizing: border-box; }
-        body { margin: 0; background: ${C.cream}; }
-        @media (max-width: 860px) {
-          .checkout-grid { grid-template-columns: 1fr !important; }
-          .checkout-summary { order: -1; }
+        @media (max-width: 768px) {
+          .co-grid { grid-template-columns: 1fr !important; }
+          .co-summary { order: -1; }
         }
+        * { box-sizing: border-box; }
       `}</style>
 
-      {/* NAV */}
-      <nav
-        style={{
-          background: '#1a1a18',
-          borderBottom: '1px solid rgba(200,168,130,.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 2rem',
-          height: 80,
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <Link href="/">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-dark.png" alt="Lotus House Blends" style={{ height: 64, display: 'block' }} />
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-          {[
-            { label: 'Shop', href: '/#shop' },
-            { label: 'Our Story', href: '/about' },
-            { label: 'Wholesale', href: '/wholesale' },
-          ].map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
+      <form onSubmit={handleSubmit}>
+        <div className="co-grid" style={{
+          display: 'grid', gridTemplateColumns: '60% 40%',
+          gap: '4rem', alignItems: 'start',
+        }}>
+          {/* ── LEFT: Form ─────────────────────────────────────────── */}
+          <div>
+            {/* 1. Contact */}
+            <section style={{ marginBottom: '2.5rem' }}>
+              <h2 style={sectionHead}>Contact Information</h2>
+              <Input id="customerName" label="Full Name" value={customerName}
+                onChange={setCustomerName} required autoComplete="name" />
+              <Input id="customerEmail" label="Email Address" type="email"
+                value={customerEmail} onChange={setCustomerEmail} required autoComplete="email" />
+            </section>
+
+            {/* 2. Shipping */}
+            <section style={{ marginBottom: '2.5rem' }}>
+              <h2 style={sectionHead}>Shipping Address</h2>
+              <AddressFields prefix="shipping"
+                values={{ name: shipName, line1: shipLine1, line2: shipLine2,
+                          city: shipCity, state: shipState, zip: shipZip }}
+                setters={{ setName: setShipName, setLine1: setShipLine1, setLine2: setShipLine2,
+                           setCity: setShipCity, setState: setShipState, setZip: setShipZip }}
+              />
+              <div style={{ marginTop: '.75rem', fontFamily: BODY, fontSize: '.85rem', color: T.textMuted }}>
+                🇺🇸 United States
+              </div>
+            </section>
+
+            {/* 3. Billing */}
+            <section style={{ marginBottom: '2.5rem' }}>
+              <h2 style={sectionHead}>Billing Address</h2>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '.6rem',
+                fontFamily: BODY, fontSize: '.85rem', color: T.textMid, cursor: 'pointer',
+                marginBottom: billingSame ? 0 : '1.25rem' }}>
+                <input type="checkbox" checked={billingSame}
+                  onChange={(e) => setBillingSame(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: T.moss, cursor: 'pointer' }}
+                />
+                Same as shipping address
+              </label>
+
+              {!billingSame && (
+                <div style={{ marginTop: '1.25rem' }}>
+                  <AddressFields prefix="billing"
+                    values={{ name: billName, line1: billLine1, line2: billLine2,
+                              city: billCity, state: billState, zip: billZip }}
+                    setters={{ setName: setBillName, setLine1: setBillLine1, setLine2: setBillLine2,
+                               setCity: setBillCity, setState: setBillState, setZip: setBillZip }}
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* 4. Payment */}
+            <section style={{ marginBottom: '2rem' }}>
+              <h2 style={sectionHead}>Payment Information</h2>
+
+              <Input id="cardholderName" label="Cardholder Name"
+                value={cardholderName} onChange={setCardholderName}
+                required autoComplete="cc-name" />
+
+              <div style={fieldWrap}>
+                <label style={labelSt}>Card Details</label>
+                <div style={{
+                  padding: '.75rem 1rem',
+                  border: `1px solid ${cardFocused ? T.moss : T.border}`,
+                  background: T.parchment,
+                  cursor: 'text',
+                  transition: 'border-color .2s',
+                }}>
+                  <CardElement
+                    onFocus={() => setCardFocused(true)}
+                    onBlur={() => setCardFocused(false)}
+                    options={{
+                      style: {
+                        base: {
+                          fontSize: '16px',
+                          color: T.brownDark,
+                          fontFamily: BODY,
+                          '::placeholder': { color: '#9A8070' },
+                          iconColor: T.sage,
+                        },
+                        invalid: { color: '#c0392b' },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading || !stripe}
+              onMouseEnter={() => setBtnHover(true)}
+              onMouseLeave={() => setBtnHover(false)}
               style={{
-                color: 'rgba(255,255,255,.75)',
-                textDecoration: 'none',
-                fontFamily: FONT_BODY,
+                width: '100%',
+                padding: '1.1rem',
+                background: loading ? '#3a5a3c' : btnHover ? '#2E4A2A' : T.moss,
+                color: T.parchment,
+                border: 'none',
+                fontFamily: BODY,
                 fontSize: '.8rem',
-                letterSpacing: '.1em',
+                letterSpacing: '.18em',
                 textTransform: 'uppercase',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'background .2s',
               }}
             >
-              {link.label}
-            </Link>
-          ))}
+              {loading ? 'Processing...' : `Place Order — $${subtotal.toFixed(2)}`}
+            </button>
+
+            {error && (
+              <p style={{ color: '#c0392b', fontFamily: BODY, fontSize: '.85rem',
+                marginTop: '.75rem', lineHeight: 1.5 }}>
+                {error}
+              </p>
+            )}
+          </div>
+
+          {/* ── RIGHT: Summary ──────────────────────────────────────── */}
+          <div className="co-summary">
+            <OrderSummary items={items} />
+          </div>
         </div>
-      </nav>
-
-      {/* PAGE */}
-      <div
-        style={{
-          background: C.cream,
-          minHeight: '100vh',
-          padding: '4rem 2rem',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1140,
-            margin: '0 auto',
-          }}
-        >
-          <form onSubmit={handleSubmit}>
-            <div
-              className="checkout-grid"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 420px',
-                gap: '4rem',
-                alignItems: 'start',
-              }}
-            >
-              {/* ── LEFT COLUMN ──────────────────────────────────────── */}
-              <div>
-                {/* Section 1 — Contact */}
-                <div style={{ marginBottom: '2.5rem' }}>
-                  <h2 style={sectionHeadingStyle}>Contact Information</h2>
-                  <Field
-                    id="customerName"
-                    label="Full Name"
-                    value={customerName}
-                    onChange={setCustomerName}
-                    required
-                    autoComplete="name"
-                  />
-                  <Field
-                    id="customerEmail"
-                    label="Email Address"
-                    type="email"
-                    value={customerEmail}
-                    onChange={setCustomerEmail}
-                    required
-                    autoComplete="email"
-                  />
-                </div>
-
-                {/* Section 2 — Shipping */}
-                <div style={{ marginBottom: '2.5rem' }}>
-                  <h2 style={sectionHeadingStyle}>Shipping Address</h2>
-                  <Field
-                    id="shippingName"
-                    label="Full Name on Package"
-                    value={shippingName}
-                    onChange={setShippingName}
-                    required
-                    autoComplete="shipping name"
-                  />
-                  <Field
-                    id="shippingLine1"
-                    label="Address Line 1"
-                    value={shippingLine1}
-                    onChange={setShippingLine1}
-                    required
-                    autoComplete="shipping address-line1"
-                  />
-                  <Field
-                    id="shippingLine2"
-                    label="Apt, Suite, etc. (optional)"
-                    value={shippingLine2}
-                    onChange={setShippingLine2}
-                    autoComplete="shipping address-line2"
-                  />
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 80px 120px',
-                      gap: '1rem',
-                    }}
-                  >
-                    <div>
-                      <label htmlFor="shippingCity" style={labelStyle}>City</label>
-                      <input
-                        id="shippingCity"
-                        type="text"
-                        value={shippingCity}
-                        onChange={(e) => setShippingCity(e.target.value)}
-                        required
-                        autoComplete="shipping address-level2"
-                        style={inputStyle}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = C.moss)}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(90,62,30,.25)')}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="shippingState" style={labelStyle}>State</label>
-                      <input
-                        id="shippingState"
-                        type="text"
-                        value={shippingState}
-                        onChange={(e) => setShippingState(e.target.value.slice(0, 2).toUpperCase())}
-                        required
-                        maxLength={2}
-                        placeholder="CA"
-                        autoComplete="shipping address-level1"
-                        style={inputStyle}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = C.moss)}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(90,62,30,.25)')}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="shippingZip" style={labelStyle}>ZIP</label>
-                      <input
-                        id="shippingZip"
-                        type="text"
-                        value={shippingZip}
-                        onChange={(e) => setShippingZip(e.target.value)}
-                        required
-                        placeholder="90210"
-                        autoComplete="shipping postal-code"
-                        style={inputStyle}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = C.moss)}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(90,62,30,.25)')}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3 — Billing */}
-                <div style={{ marginBottom: '2.5rem' }}>
-                  <h2 style={sectionHeadingStyle}>Billing Address</h2>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '.65rem',
-                      marginBottom: billingSame ? 0 : '1.25rem',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      id="billingSame"
-                      checked={billingSame}
-                      onChange={(e) => setBillingSame(e.target.checked)}
-                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.moss }}
-                    />
-                    <label
-                      htmlFor="billingSame"
-                      style={{
-                        fontFamily: FONT_BODY,
-                        fontSize: '.85rem',
-                        color: C.textMid,
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                      }}
-                    >
-                      Same as shipping address
-                    </label>
-                  </div>
-
-                  {!billingSame && (
-                    <div style={{ marginTop: '1.25rem' }}>
-                      <Field
-                        id="billingName"
-                        label="Full Name"
-                        value={billingName}
-                        onChange={setBillingName}
-                        required
-                        autoComplete="billing name"
-                      />
-                      <Field
-                        id="billingLine1"
-                        label="Address Line 1"
-                        value={billingLine1}
-                        onChange={setBillingLine1}
-                        required
-                        autoComplete="billing address-line1"
-                      />
-                      <Field
-                        id="billingLine2"
-                        label="Apt, Suite, etc. (optional)"
-                        value={billingLine2}
-                        onChange={setBillingLine2}
-                        autoComplete="billing address-line2"
-                      />
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 80px 120px',
-                          gap: '1rem',
-                        }}
-                      >
-                        <div>
-                          <label htmlFor="billingCity" style={labelStyle}>City</label>
-                          <input
-                            id="billingCity"
-                            type="text"
-                            value={billingCity}
-                            onChange={(e) => setBillingCity(e.target.value)}
-                            required
-                            autoComplete="billing address-level2"
-                            style={inputStyle}
-                            onFocus={(e) => (e.currentTarget.style.borderColor = C.moss)}
-                            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(90,62,30,.25)')}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="billingState" style={labelStyle}>State</label>
-                          <input
-                            id="billingState"
-                            type="text"
-                            value={billingState}
-                            onChange={(e) => setBillingState(e.target.value.slice(0, 2).toUpperCase())}
-                            required
-                            maxLength={2}
-                            placeholder="CA"
-                            autoComplete="billing address-level1"
-                            style={inputStyle}
-                            onFocus={(e) => (e.currentTarget.style.borderColor = C.moss)}
-                            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(90,62,30,.25)')}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="billingZip" style={labelStyle}>ZIP</label>
-                          <input
-                            id="billingZip"
-                            type="text"
-                            value={billingZip}
-                            onChange={(e) => setBillingZip(e.target.value)}
-                            required
-                            placeholder="90210"
-                            autoComplete="billing postal-code"
-                            style={inputStyle}
-                            onFocus={(e) => (e.currentTarget.style.borderColor = C.moss)}
-                            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(90,62,30,.25)')}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Section 4 — Payment */}
-                <div style={{ marginBottom: '2.5rem' }}>
-                  <h2 style={sectionHeadingStyle}>Payment</h2>
-                  <Field
-                    id="cardholderName"
-                    label="Cardholder Name"
-                    value={cardholderName}
-                    onChange={setCardholderName}
-                    required
-                    autoComplete="cc-name"
-                  />
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={labelStyle}>Card Details</label>
-                    <div
-                      style={{
-                        padding: '.75rem 1rem',
-                        border: `1px solid ${cardFocused ? C.moss : 'rgba(90,62,30,.25)'}`,
-                        background: C.parchment,
-                        cursor: 'text',
-                        transition: 'border-color .2s',
-                      }}
-                    >
-                      <CardElement
-                        onFocus={() => setCardFocused(true)}
-                        onBlur={() => setCardFocused(false)}
-                        options={{
-                          style: {
-                            base: {
-                              fontSize: '16px',
-                              color: C.brownDark,
-                              fontFamily: FONT_BODY,
-                              '::placeholder': { color: '#9A8070' },
-                              iconColor: C.sage,
-                            },
-                            invalid: { color: '#c0392b' },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading || !stripe}
-                  style={{
-                    width: '100%',
-                    padding: '1.1rem',
-                    background: loading ? '#4a7050' : C.moss,
-                    color: C.parchment,
-                    border: 'none',
-                    fontFamily: FONT_BODY,
-                    fontSize: '.8rem',
-                    letterSpacing: '.18em',
-                    textTransform: 'uppercase',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    marginTop: '1.5rem',
-                    transition: 'background .2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#2E4A2A';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!loading) (e.currentTarget as HTMLButtonElement).style.background = C.moss;
-                  }}
-                >
-                  {loading
-                    ? 'Processing...'
-                    : `Place Order — $${subtotal.toFixed(2)}`}
-                </button>
-
-                {error && (
-                  <p
-                    style={{
-                      color: '#c0392b',
-                      fontFamily: FONT_BODY,
-                      fontSize: '.85rem',
-                      marginTop: '1rem',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {error}
-                  </p>
-                )}
-              </div>
-
-              {/* ── RIGHT COLUMN ─────────────────────────────────────── */}
-              <div className="checkout-summary">
-                <OrderSummary items={items} />
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* FOOTER */}
-      <footer
-        style={{
-          background: '#1a1a18',
-          borderTop: '1px solid rgba(200,168,130,.15)',
-          padding: '1.5rem 2rem',
-          textAlign: 'center',
-        }}
-      >
-        <p
-          style={{
-            color: 'rgba(255,255,255,.35)',
-            fontFamily: FONT_BODY,
-            fontSize: '.75rem',
-            marginBottom: '.35rem',
-          }}
-        >
-          © 2026 Lotus House Blends
-        </p>
-        <span
-          style={{
-            fontSize: '.6rem',
-            color: 'rgba(200,168,130,.3)',
-            letterSpacing: '.08em',
-          }}
-        >
-          Powered by Outsyde
-        </span>
-      </footer>
+      </form>
     </>
   );
 }
 
-// ─── Page Export ─────────────────────────────────────────────────────────────
+// ─── Page shell ───────────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   return (
-    <Elements stripe={stripePromise}>
-      <CheckoutForm />
-    </Elements>
+    <>
+      <style>{`
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #EDE3CC; }
+      `}</style>
+
+      {/* NAV */}
+      <nav style={{
+        background: '#1a1a18',
+        borderBottom: '1px solid rgba(200,168,130,.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 2rem', height: 64, position: 'sticky', top: 0, zIndex: 100,
+      }}>
+        <Link href="/">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-dark.png" alt="Lotus House Blends"
+            style={{ height: 48, display: 'block' }} />
+        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
+          {[
+            { label: 'Shop',      href: '/#shop' },
+            { label: 'Our Story', href: '/about' },
+            { label: 'Wholesale', href: '/wholesale' },
+          ].map((l) => (
+            <Link key={l.href} href={l.href} style={{
+              color: 'rgba(255,255,255,.75)', textDecoration: 'none',
+              fontFamily: BODY, fontSize: '.8rem', letterSpacing: '.1em',
+              textTransform: 'uppercase',
+            }}>{l.label}</Link>
+          ))}
+        </div>
+      </nav>
+
+      {/* MAIN */}
+      <main style={{ background: '#EDE3CC', minHeight: 'calc(100vh - 64px)', padding: '3rem 2rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <h1 style={{
+            fontFamily: DISPLAY, fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
+            fontWeight: 400, color: '#2A1E0E',
+            marginBottom: '2.5rem', margin: '0 0 2.5rem',
+          }}>
+            Checkout
+          </h1>
+          <Elements stripe={stripePromise}>
+            <CheckoutForm />
+          </Elements>
+        </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer style={{
+        background: '#1a1a18', borderTop: '1px solid rgba(200,168,130,.15)',
+        padding: '1.5rem 2rem', textAlign: 'center',
+      }}>
+        <p style={{ color: 'rgba(255,255,255,.35)', fontFamily: BODY,
+          fontSize: '.75rem', marginBottom: '.35rem' }}>
+          © 2026 Lotus House Blends
+        </p>
+        <span style={{ fontSize: '.6rem', color: 'rgba(200,168,130,.3)', letterSpacing: '.08em' }}>
+          Powered by Outsyde
+        </span>
+      </footer>
+    </>
   );
 }
