@@ -44,7 +44,7 @@ function LoginForm() {
     const session = await sessionRes.json();
     const isAdmin = session?.user?.isAdmin;
 
-    router.push(isAdmin ? "/admin/dashboard" : "/account");
+    router.push(isAdmin ? "/admin/dashboard" : "/");
     router.refresh();
   }
 
