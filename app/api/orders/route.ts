@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import sql from '@/lib/db';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -63,7 +64,24 @@ export async function POST(req: NextRequest) {
       RETURNING id
     `;
 
-    return NextResponse.json({ orderId: rows[0].id });
+    const orderId = rows[0].id as string;
+
+    // Fire confirmation email to vendor + admin (non-blocking)
+    sendOrderConfirmationEmail({
+      orderId,
+      customerName,
+      customerEmail,
+      items: (items as Array<{ name: string; qty: number; price: number }>),
+      totalCents,
+      shippingAddress: {
+        line1: shippingLine1,
+        city:  shippingCity,
+        state: shippingState,
+        zip:   shippingZip,
+      },
+    }).catch((err) => console.error('[LHB] order confirmation email failed:', err));
+
+    return NextResponse.json({ orderId });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -1,3 +1,5 @@
+import { LHB_CONFIG } from './lhb-config';
+
 export interface CartItem {
   id: string;
   name: string;
@@ -6,7 +8,7 @@ export interface CartItem {
   qty: number;
 }
 
-const CART_KEY = "lhb-cart";
+const CART_KEY = LHB_CONFIG.cartKey;
 type Listener = () => void;
 const listeners: Set<Listener> = new Set();
 
