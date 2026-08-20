@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
 import { detectCarrier, buildTrackingUrl, type Carrier } from '@/lib/lhb-config';
-import { sendShipmentNotificationEmail } from '@/lib/email';
+import { sendShipmentNotificationEmail } from '@/lib/backend-email';
 
 export async function PATCH(
   req: NextRequest,
