@@ -15,6 +15,7 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
   const [carrier, setCarrier] = useState<Carrier>('Other');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [succeeded, setSucceeded] = useState(false);
 
   // Auto-detect carrier as user types
   useEffect(() => {
@@ -37,7 +38,10 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
       });
       const data = await res.json() as any;
       if (!res.ok) throw new Error(data.error ?? 'Failed to update order');
-      onShipped({ trackingNumber: trackingNumber.trim(), carrier, trackingUrl: data.order?.tracking_url ?? null });
+      setSucceeded(true);
+      setTimeout(() => {
+        onShipped({ trackingNumber: trackingNumber.trim(), carrier, trackingUrl: data.order?.tracking_url ?? null });
+      }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
@@ -63,7 +67,7 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
     >
       <div style={{
         background: '#111', border: '1px solid rgba(255,255,255,0.12)',
-        padding: '32px', width: '100%', maxWidth: 460,
+        padding: '32px', width: '100%', maxWidth: 460, position: 'relative',
       }}>
         <h2 style={{ fontFamily: 'Georgia,serif', fontSize: '1.3rem', fontWeight: 400, color: '#f5f0e6', margin: '0 0 6px' }}>
           Mark as Shipped
@@ -138,6 +142,27 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
             </button>
           </div>
         </form>
+
+        {succeeded && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: '#111', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 16,
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'rgba(80,180,120,0.15)', border: '1px solid rgba(80,180,120,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.5rem', color: '#50b478',
+            }}>✓</div>
+            <p style={{ fontFamily: 'Georgia,serif', fontSize: '1.1rem', color: '#f5f0e6', margin: 0 }}>
+              Shipment confirmed
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'rgba(245,240,230,0.45)', margin: 0 }}>
+              Emails sent to vendor &amp; customer
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

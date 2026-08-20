@@ -91,15 +91,29 @@ function SuccessContent() {
             shortly with your order details.
           </p>
 
-          <Link href="/" style={{
-            display: 'inline-block',
-            background: '#1E3020', color: '#F2EBD9',
-            padding: '.9rem 2.5rem', textDecoration: 'none',
-            fontFamily: BODY, fontSize: '.75rem',
-            letterSpacing: '.15em', textTransform: 'uppercase',
-          }}>
-            Continue Shopping
-          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+            {orderId && (
+              <Link href={`/orders/${orderId}`} style={{
+                display: 'inline-block',
+                background: '#1E3020', color: '#F2EBD9',
+                padding: '.9rem 2.5rem', textDecoration: 'none',
+                fontFamily: BODY, fontSize: '.75rem',
+                letterSpacing: '.15em', textTransform: 'uppercase',
+              }}>
+                Track My Order
+              </Link>
+            )}
+            <Link href="/" style={{
+              display: 'inline-block',
+              background: 'transparent', color: '#4A3820',
+              border: '1px solid rgba(74,55,32,0.3)',
+              padding: '.75rem 2rem', textDecoration: 'none',
+              fontFamily: BODY, fontSize: '.75rem',
+              letterSpacing: '.15em', textTransform: 'uppercase',
+            }}>
+              Continue Shopping
+            </Link>
+          </div>
         </div>
 
         {/* FOOTER */}
