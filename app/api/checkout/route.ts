@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { LHB_CONFIG } from '@/lib/lhb-config';
 
 interface CartItem {
   id: string;
@@ -30,14 +31,23 @@ export async function POST(req: NextRequest) {
       items.reduce((sum, item) => sum + item.price * item.qty, 0) * 100
     );
 
+    const platformFee = Math.round(amount * 0.02);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'usd',
       receipt_email: customerEmail || undefined,
       metadata: {
+        businessId: LHB_CONFIG.businessId,
         items: JSON.stringify(items),
       },
       automatic_payment_methods: { enabled: true },
+      // Route payment through Stripe Connect: 2% platform fee stays with Outsyde,
+      // remainder transfers to LHB's connected account on capture.
+      application_fee_amount: platformFee,
+      transfer_data: {
+        destination: LHB_CONFIG.stripeAccountId,
+      },
     });
 
     return NextResponse.json({
