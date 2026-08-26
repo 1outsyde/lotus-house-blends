@@ -34,21 +34,17 @@ export async function PATCH(
 
   const resolvedCarrier: Carrier = (carrierInput as Carrier) || detectCarrier(trackingNumber);
   const trackingUrl = buildTrackingUrl(resolvedCarrier, trackingNumber);
-  const shippedAt = new Date().toISOString();
 
   const rows = await sql`
     UPDATE orders
     SET
-      status           = 'shipped',
-      tracking_number  = ${trackingNumber.trim()},
-      tracking_carrier = ${resolvedCarrier},
-      tracking_url     = ${trackingUrl},
-      shipped_at       = ${shippedAt}
+      status          = 'shipped',
+      tracking_number = ${trackingNumber.trim()},
+      carrier         = ${resolvedCarrier}
     WHERE id = ${orderId}
     RETURNING
-      id, order_number, customer_name, customer_email,
-      shipping_line1, shipping_city, shipping_state, shipping_zip,
-      items, total_cents, tracking_number, tracking_carrier, tracking_url, shipped_at, status
+      id, order_number, customer_id, items, total_amount,
+      tracking_number, carrier, shipping_address, status
   `;
 
   if (!rows[0]) {
@@ -57,24 +53,18 @@ export async function PATCH(
 
   const order = rows[0] as any;
 
-  // Dual email: vendor + admin + customer
   sendShipmentNotificationEmail({
-    orderId:       order.id,
-    orderNumber:   order.order_number,
-    customerName:  order.customer_name,
-    customerEmail: order.customer_email,
-    items:         order.items as Array<{ name: string; qty: number; price: number }>,
-    totalCents:    order.total_cents,
-    shippingAddress: {
-      line1: order.shipping_line1,
-      city:  order.shipping_city,
-      state: order.shipping_state,
-      zip:   order.shipping_zip,
-    },
-    trackingNumber,
-    carrier:    resolvedCarrier,
+    orderId:      order.id,
+    orderNumber:  order.order_number,
+    customerName: '',
+    customerEmail: '',
+    items:        order.items as Array<{ name: string; qty: number; price: number }>,
+    totalCents:   order.total_amount,
+    shippingAddress: { line1: order.shipping_address ?? '', city: '', state: '', zip: '' },
+    trackingNumber: trackingNumber.trim(),
+    carrier:        resolvedCarrier,
     trackingUrl,
   }).catch((err) => console.error('[LHB] shipment email failed:', err));
 
-  return NextResponse.json({ success: true, order });
+  return NextResponse.json({ success: true, order: { ...order, tracking_url: trackingUrl } });
 }
