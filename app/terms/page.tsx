@@ -19,6 +19,12 @@ const CSS_VARS = `
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--lhb-parchment); color: #1a1a18; font-family: var(--font-body); }
+  @media (max-width: 640px) {
+    .lhb-nav { padding: 0 1rem !important; }
+    .lhb-nav-links { gap: .75rem !important; }
+    .lhb-terms-grid { grid-template-columns: 1fr !important; gap: 1.5rem !important; padding: 2rem 1.25rem !important; }
+    .lhb-terms-toc { display: none !important; }
+  }
 `;
 
 const sections = [
@@ -71,6 +77,7 @@ export default function TermsPage() {
 
       {/* NAV */}
       <nav
+        className="lhb-nav"
         style={{
           background: "var(--lhb-black)",
           borderBottom: "1px solid rgba(200,168,130,.2)",
@@ -88,7 +95,7 @@ export default function TermsPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-dark.png" alt="Lotus House Blends" width={140} />
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
+        <div className="lhb-nav-links" style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
           {[
             { label: "Shop", href: "/#shop" },
             { label: "Our Story", href: "/about" },
@@ -144,6 +151,7 @@ export default function TermsPage() {
 
       {/* CONTENT */}
       <div
+        className="lhb-terms-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "200px 1fr",
@@ -156,6 +164,7 @@ export default function TermsPage() {
       >
         {/* Sidebar TOC */}
         <nav
+          className="lhb-terms-toc"
           style={{
             position: "sticky",
             top: 80,

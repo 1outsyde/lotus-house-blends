@@ -57,6 +57,11 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
 
   return (
     <>
+      <style>{`
+        @media (max-width: 640px) {
+          .lhb-order-meta { grid-template-columns: 1fr !important; gap: 12px !important; }
+        }
+      `}</style>
       {/* Filter toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
         <button
@@ -142,7 +147,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
               </div>
 
               {/* Customer + shipping */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="lhb-order-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div>
                   <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Customer</p>
                   <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>{order.customer_id.slice(0, 8).toUpperCase()}</p>

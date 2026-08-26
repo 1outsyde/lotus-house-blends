@@ -44,6 +44,11 @@ const CSS_VARS = `
     color: #666;
     margin-bottom: .4rem;
   }
+  @media (max-width: 640px) {
+    .lhb-nav { padding: 0 1rem !important; }
+    .lhb-nav-links { gap: .75rem !important; }
+    .lhb-form-row { grid-template-columns: 1fr !important; }
+  }
 `;
 
 export default function WholesalePage() {
@@ -53,6 +58,7 @@ export default function WholesalePage() {
 
       {/* NAV */}
       <nav
+        className="lhb-nav"
         style={{
           background: "var(--lhb-black)",
           borderBottom: "1px solid rgba(200,168,130,.2)",
@@ -70,7 +76,7 @@ export default function WholesalePage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-dark.png" alt="Lotus House Blends" width={140} />
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
+        <div className="lhb-nav-links" style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
           {[
             { label: "Shop", href: "/#shop" },
             { label: "Our Story", href: "/about" },
@@ -232,7 +238,7 @@ export default function WholesalePage() {
           encType="text/plain"
           style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="lhb-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label htmlFor="businessName">Business Name *</label>
               <input
@@ -255,7 +261,7 @@ export default function WholesalePage() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="lhb-form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label htmlFor="email">Email *</label>
               <input

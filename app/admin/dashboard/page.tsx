@@ -79,8 +79,8 @@ export default function AdminDashboard() {
       <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '1.3rem', fontWeight: 400, marginBottom: 20 }}>
         Recent Orders
       </h2>
-      <div style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ border: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               {['Order', 'Customer', 'Amount', 'Status', 'Date'].map(h => (

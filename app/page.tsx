@@ -73,6 +73,22 @@ const CSS_VARS = `
   .ftab { background: transparent; border: 1px solid rgba(90,62,30,.2); color: var(--lhb-text-muted); padding: .55rem 1.25rem; font-family: 'Jost', sans-serif; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 400; cursor: pointer; transition: all .18s; }
   .ftab:hover { border-color: var(--lhb-lavender); color: var(--lhb-lavender); }
   .ftab.active { background: var(--lhb-moss); border-color: var(--lhb-moss); color: #F2EBD9; }
+
+  @media (max-width: 640px) {
+    .lhb-nav { padding: 0 1rem !important; height: auto !important; min-height: 56px; flex-wrap: wrap; padding-top: .6rem !important; padding-bottom: .6rem !important; }
+    .lhb-nav-links { flex-wrap: wrap; gap: .75rem !important; justify-content: flex-end; }
+    .lhb-nav-secondary { display: none !important; }
+    .lhb-hero { grid-template-columns: 1fr !important; min-height: auto !important; }
+    .lhb-hero-img { display: none !important; }
+    .lhb-hero-text { padding: 3rem 1.25rem !important; }
+    .lhb-about { grid-template-columns: 1fr !important; min-height: auto !important; }
+    .lhb-about-img { display: none !important; }
+    .lhb-about-text { padding: 2.5rem 1.25rem !important; }
+    .product-grid { grid-template-columns: 1fr; }
+    .blend-group-hdr { flex-wrap: wrap; gap: .5rem; }
+    .blend-group-sub { margin-left: 0 !important; font-size: .7rem; }
+    .pcard-img { height: 220px; }
+  }
 `;
 
 const typeLabels: Record<string, string> = {
@@ -201,14 +217,18 @@ export default function HomePage() {
       <style>{CSS_VARS}</style>
 
       {/* NAV */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--lhb-black)", borderBottom: "1px solid rgba(200,168,130,.2)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem", height: 80 }}>
+      <nav className="lhb-nav" style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--lhb-black)", borderBottom: "1px solid rgba(200,168,130,.2)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem", height: 80 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", height: "100%", padding: "8px 0" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-dark.png" alt="Lotus House Blends" style={{ height: "64px", width: "auto", display: "block", objectFit: "contain" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
-          {[["#shop","Shop"],["about","Our Story"],["wholesale","Wholesale"]].map(([href, label]) => (
-            <Link key={label} href={href.startsWith("#") ? href : `/${href}`} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
+        <div className="lhb-nav-links" style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
+          {([
+            { href: "#shop", label: "Shop" },
+            { href: "about", label: "Our Story", secondary: true },
+            { href: "wholesale", label: "Wholesale", secondary: true },
+          ] as Array<{ href: string; label: string; secondary?: boolean }>).map(({ href, label, secondary }) => (
+            <Link key={label} href={href.startsWith("#") ? href : `/${href}`} className={secondary ? "lhb-nav-secondary" : undefined} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
           ))}
 
           {user ? (
@@ -239,12 +259,12 @@ export default function HomePage() {
       </nav>
 
       {/* HERO */}
-      <section style={{ position: "relative", minHeight: "90vh", display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden" }}>
-        <div style={{ position: "relative", overflow: "hidden", background: "var(--lhb-black)" }}>
+      <section className="lhb-hero" style={{ position: "relative", minHeight: "90vh", display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden" }}>
+        <div className="lhb-hero-img" style={{ position: "relative", overflow: "hidden", background: "var(--lhb-black)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/lifestyle-ritual.jpg" alt="Lotus ritual" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.75 }} />
         </div>
-        <div style={{ background: "#2d4a3e", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4rem 3rem", textAlign: "center" }}>
+        <div className="lhb-hero-text" style={{ background: "#2d4a3e", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4rem 3rem", textAlign: "center" }}>
           <div className="hero-logo-wrap">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-dark.png" alt="Lotus House Blends logo" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -272,12 +292,12 @@ export default function HomePage() {
       </div>
 
       {/* ABOUT STRIP */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 480 }}>
-        <div style={{ position: "relative", overflow: "hidden", background: "var(--lhb-parchment-dark)" }}>
+      <section className="lhb-about" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 480 }}>
+        <div className="lhb-about-img" style={{ position: "relative", overflow: "hidden", background: "var(--lhb-parchment-dark)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/lifestyle-model.jpg" alt="Ritual lifestyle" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
-        <div style={{ padding: "4rem 3rem", display: "flex", flexDirection: "column", justifyContent: "center", background: "var(--lhb-parchment)" }}>
+        <div className="lhb-about-text" style={{ padding: "4rem 3rem", display: "flex", flexDirection: "column", justifyContent: "center", background: "var(--lhb-parchment)" }}>
           <div style={{ fontSize: ".65rem", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--lhb-gold)", fontFamily: "var(--font-body)", marginBottom: "1rem" }}>Founded on Ritual</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 400, lineHeight: 1.2, marginBottom: "1.25rem" }}>
             Blended with intention.<br />
