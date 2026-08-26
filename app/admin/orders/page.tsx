@@ -10,10 +10,10 @@ export default async function AdminOrders() {
       id, order_number,
       customer_id,
       items,
-      total_amount, vendor_net,
+      total_amount,
       status,
       shipping_address,
-      tracking_number, carrier, shipped_at,
+      tracking_number, carrier,
       created_at
     FROM orders
     WHERE business_id = ${process.env.OUTSYDE_BUSINESS_ID}
