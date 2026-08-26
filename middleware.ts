@@ -6,7 +6,7 @@ export default withAuth(
     const token = req.nextauth.token;
     const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
 
-    if (isAdminRoute && !token?.isAdmin) {
+    if (isAdminRoute && !token?.isAdmin && !token?.isVendor) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
@@ -20,5 +20,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*"],
+  matcher: ["/admin/:path*"],
 };
