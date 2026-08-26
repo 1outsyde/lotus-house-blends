@@ -5,19 +5,21 @@ const sql = neon(process.env.DATABASE_URL!)
 export default async function AdminDashboard() {
   const orders = await sql`
     SELECT COUNT(*) as total_orders,
-           COALESCE(SUM(subtotal), 0) as total_revenue
+           COALESCE(SUM(total_amount), 0) as total_revenue
     FROM orders
+    WHERE business_id = ${process.env.OUTSYDE_BUSINESS_ID}
   `
 
   const recentOrders = await sql`
-    SELECT id, order_number, name, email, subtotal, status, created_at
+    SELECT id, order_number, customer_id, total_amount, status, created_at
     FROM orders
+    WHERE business_id = ${process.env.OUTSYDE_BUSINESS_ID}
     ORDER BY created_at DESC
     LIMIT 5
   `
 
   const totalOrders = orders[0]?.total_orders ?? 0
-  const totalRevenue = parseFloat(orders[0]?.total_revenue ?? '0')
+  const totalRevenueCents = parseInt(orders[0]?.total_revenue ?? '0', 10)
 
   return (
     <div>
@@ -42,7 +44,7 @@ export default async function AdminDashboard() {
             Total Revenue
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '2.5rem', color: '#f5f0e6' }}>
-            ${totalRevenue.toFixed(2)}
+            ${(totalRevenueCents / 100).toFixed(2)}
           </p>
         </div>
       </div>
@@ -54,7 +56,7 @@ export default async function AdminDashboard() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {['Order', 'Customer', 'Email', 'Amount', 'Status', 'Date'].map(h => (
+              {['Order', 'Customer', 'Amount', 'Status', 'Date'].map(h => (
                 <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', fontWeight: 400 }}>
                   {h}
                 </th>
@@ -67,9 +69,8 @@ export default async function AdminDashboard() {
                 <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>
                   #{String(order.order_number).padStart(4, '0')}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>{order.name}</td>
-                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>{order.email}</td>
-                <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>${parseFloat(order.subtotal).toFixed(2)}</td>
+                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>{String(order.customer_id).slice(0, 8).toUpperCase()}</td>
+                <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>${(order.total_amount / 100).toFixed(2)}</td>
                 <td style={{ padding: '14px 16px' }}>
                   <span style={{ fontSize: '0.65rem', letterSpacing: '.1em', textTransform: 'uppercase', padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f5f0e6' }}>
                     {order.status}
