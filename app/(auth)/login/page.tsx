@@ -113,6 +113,11 @@ function LoginForm() {
             Create one
           </Link>
         </p>
+        <p style={{ textAlign: 'center', fontSize: '0.82rem', color: 'rgba(245,240,230,0.4)', marginTop: 12 }}>
+          <Link href="/forgot-password" style={{ color: 'rgba(245,240,230,0.5)', textDecoration: 'underline' }}>
+            Forgot password?
+          </Link>
+        </p>
       </div>
     </div>
   )
