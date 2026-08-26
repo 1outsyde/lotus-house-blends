@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     await fetch(`${process.env.OUTSYDE_API_URL}/api/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, redirect_uri: 'https://www.lotushouseblends.com' }),
     });
   } catch {
     // Swallow — anti-enumeration: always 200
