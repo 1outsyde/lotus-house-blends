@@ -7,7 +7,7 @@ export default async function AdminOrders() {
   // Oldest unfulfilled first (fulfillment priority); newest at top for notification awareness
   const rows = await sql`
     SELECT
-      id, order_num,
+      id, order_number,
       customer_name, customer_email,
       shipping_name, shipping_line1, shipping_city, shipping_state, shipping_zip,
       subtotal_cents, total_cents,

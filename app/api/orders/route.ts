@@ -61,14 +61,16 @@ export async function POST(req: NextRequest) {
         ${JSON.stringify(items)}, ${subtotalCents}, ${totalCents},
         ${paymentIntentId}, ${pi.status}, 'paid'
       )
-      RETURNING id
+      RETURNING id, order_number
     `;
 
     const orderId = rows[0].id as string;
+    const orderNumber = rows[0].order_number as number;
 
     // Fire confirmation email to vendor + admin (non-blocking)
     sendOrderConfirmationEmail({
       orderId,
+      orderNumber,
       customerName,
       customerEmail,
       items: (items as Array<{ name: string; qty: number; price: number }>),
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
       },
     }).catch((err) => console.error('[LHB] order confirmation email failed:', err));
 
-    return NextResponse.json({ orderId });
+    return NextResponse.json({ orderId, orderNumber });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -10,7 +10,7 @@ export default async function AdminDashboard() {
   `
 
   const recentOrders = await sql`
-    SELECT id, order_num, name, email, subtotal, status, created_at
+    SELECT id, order_number, name, email, subtotal, status, created_at
     FROM orders
     ORDER BY created_at DESC
     LIMIT 5
@@ -65,7 +65,7 @@ export default async function AdminDashboard() {
             {recentOrders.map((order: any) => (
               <tr key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>
-                  {order.order_num?.slice(0, 12)}...
+                  #{String(order.order_number).padStart(4, '0')}
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>{order.name}</td>
                 <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>{order.email}</td>

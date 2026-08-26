@@ -7,6 +7,7 @@ const FROM = 'orders@info.goutsyde.com';
 
 export interface OrderEmailData {
   orderId: string;
+  orderNumber: number;
   customerName: string;
   customerEmail: string;
   items: Array<{ name: string; qty: number; price: number }>;
@@ -27,8 +28,8 @@ function dualRecipients(): string[] {
 }
 
 export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<void> {
-  const { orderId, customerName, customerEmail, items, totalCents, shippingAddress } = data;
-  const ref = `#${orderId.slice(0, 8).toUpperCase()}`;
+  const { orderNumber, customerName, customerEmail, items, totalCents, shippingAddress } = data;
+  const ref = `#${String(orderNumber).padStart(4, '0')}`;
 
   const itemsHtml = items.map(i =>
     `<tr>
@@ -79,8 +80,8 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<
 }
 
 export async function sendShipmentNotificationEmail(data: OrderEmailData): Promise<void> {
-  const { orderId, customerName, customerEmail, trackingNumber, carrier, trackingUrl } = data;
-  const ref = `#${orderId.slice(0, 8).toUpperCase()}`;
+  const { orderNumber, customerName, customerEmail, trackingNumber, carrier, trackingUrl } = data;
+  const ref = `#${String(orderNumber).padStart(4, '0')}`;
 
   const trackingBtn = trackingUrl
     ? `<a href="${trackingUrl}" style="display:inline-block;background:#1E3020;color:#F2EBD9;padding:10px 20px;text-decoration:none;font-size:13px;border-radius:2px;margin-top:12px;">Track My Package →</a>`
@@ -138,9 +139,9 @@ export async function sendShipmentNotificationEmail(data: OrderEmailData): Promi
 }
 
 export async function sendCancellationEmail(
-  data: Pick<OrderEmailData, 'orderId' | 'customerName' | 'customerEmail' | 'totalCents'>
+  data: Pick<OrderEmailData, 'orderId' | 'orderNumber' | 'customerName' | 'customerEmail' | 'totalCents'>
 ): Promise<void> {
-  const ref = `#${data.orderId.slice(0, 8).toUpperCase()}`;
+  const ref = `#${String(data.orderNumber).padStart(4, '0')}`;
   try {
     await resend.emails.send({
       from: FROM,
