@@ -10,13 +10,11 @@ export interface OrderRow {
   customer_id: string;
   items: Array<{ name: string; qty: number; price: number }>;
   total_amount: number;
-  vendor_net: number;
   status: string;
   shipping_address: string | null;
   created_at: string;
   tracking_number: string | null;
   carrier: string | null;
-  shipped_at: string | null;
   isNewest?: boolean;
 }
 
@@ -45,7 +43,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
   function handleShipped(orderId: string, data: { trackingNumber: string; carrier: Carrier; trackingUrl: string | null }) {
     setOrders(prev => prev.map(o =>
       o.id === orderId
-        ? { ...o, status: 'shipped', tracking_number: data.trackingNumber, tracking_carrier: data.carrier, tracking_url: data.trackingUrl, shipped_at: new Date().toISOString() }
+        ? { ...o, status: 'shipped', tracking_number: data.trackingNumber, carrier: data.carrier }
         : o
     ));
     setFulfilling(null);
@@ -195,11 +193,6 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                     >
                       Track Package →
                     </a>
-                  )}
-                  {order.shipped_at && (
-                    <p style={{ fontSize: '0.72rem', color: 'rgba(245,240,230,0.3)', marginTop: 8 }}>
-                      Shipped {new Date(order.shipped_at).toLocaleString()}
-                    </p>
                   )}
                 </div>
               )}
