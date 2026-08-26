@@ -9,8 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
-    "@stripe/react-stripe-js": "^6.8.1",
+"@stripe/react-stripe-js": "^6.8.1",
     "@stripe/stripe-js": "^9.13.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
