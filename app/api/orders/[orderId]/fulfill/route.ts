@@ -46,7 +46,7 @@ export async function PATCH(
       shipped_at       = ${shippedAt}
     WHERE id = ${orderId}
     RETURNING
-      id, customer_name, customer_email,
+      id, order_number, customer_name, customer_email,
       shipping_line1, shipping_city, shipping_state, shipping_zip,
       items, total_cents, tracking_number, tracking_carrier, tracking_url, shipped_at, status
   `;
@@ -60,6 +60,7 @@ export async function PATCH(
   // Dual email: vendor + admin + customer
   sendShipmentNotificationEmail({
     orderId:       order.id,
+    orderNumber:   order.order_number,
     customerName:  order.customer_name,
     customerEmail: order.customer_email,
     items:         order.items as Array<{ name: string; qty: number; price: number }>,

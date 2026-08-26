@@ -6,7 +6,7 @@ import { buildTrackingUrl, type Carrier } from '@/lib/lhb-config';
 
 export interface OrderRow {
   id: string;
-  order_num: string;
+  order_number: number;
   customer_name: string;
   customer_email: string;
   shipping_name: string;
@@ -133,7 +133,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                     Order ID
                   </p>
                   <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>
-                    {order.order_num}
+                    #{String(order.order_number).padStart(4, '0')}
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
