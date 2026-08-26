@@ -30,9 +30,13 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
     setError('');
 
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null;
       const res = await fetch(`/api/orders/${orderId}/fulfill`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ trackingNumber: trackingNumber.trim(), carrier }),
       });
       const data = await res.json() as any;
