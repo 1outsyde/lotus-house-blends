@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
-import bcrypt from "bcryptjs";
-
-const sql = neon(process.env.DATABASE_URL!);
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,33 +18,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if email already exists
-    const existing = await sql`
-      SELECT id FROM users WHERE email = ${email} LIMIT 1
-    `;
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/vendor/register-external`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-key": process.env.INTERNAL_API_KEY!,
+        },
+        body: JSON.stringify({ name, email, password }),
+      }
+    );
 
-    if (existing.length > 0) {
+    const data = await res.json();
+
+    if (!res.ok) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
+        { error: data.error ?? "Registration failed" },
+        { status: res.status }
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user
-    const result = await sql`
-      INSERT INTO users (name, email, password, is_admin)
-      VALUES (${name}, ${email}, ${hashedPassword}, false)
-      RETURNING id, name, email
-    `;
-
-    return NextResponse.json(
-      { user: result[0] },
-      { status: 201 }
-    );
-
+    return NextResponse.json({ user: data.user }, { status: 201 });
   } catch (err: any) {
     console.error("Register error:", err);
     return NextResponse.json(
