@@ -7,23 +7,16 @@ import { buildTrackingUrl, type Carrier } from '@/lib/lhb-config';
 export interface OrderRow {
   id: string;
   order_number: number;
-  customer_name: string;
-  customer_email: string;
-  shipping_name: string;
-  shipping_line1: string;
-  shipping_city: string;
-  shipping_state: string;
-  shipping_zip: string;
-  subtotal_cents: number;
-  total_cents: number;
-  status: string;
+  customer_id: string;
   items: Array<{ name: string; qty: number; price: number }>;
+  total_amount: number;
+  vendor_net: number;
+  status: string;
+  shipping_address: string | null;
   created_at: string;
   tracking_number: string | null;
-  tracking_carrier: string | null;
-  tracking_url: string | null;
+  carrier: string | null;
   shipped_at: string | null;
-  notes: string | null;
   isNewest?: boolean;
 }
 
@@ -103,10 +96,9 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
         {displayed.map((order) => {
           const items = order.items ?? [];
           const isShipped = order.status === 'shipped' || order.status === 'delivered';
-          const trackUrl = order.tracking_url
-            ?? (order.tracking_number && order.tracking_carrier
-              ? buildTrackingUrl(order.tracking_carrier as Carrier, order.tracking_number)
-              : null);
+          const trackUrl = order.tracking_number && order.carrier
+            ? buildTrackingUrl(order.carrier as Carrier, order.tracking_number)
+            : null;
 
           return (
             <div key={order.id} style={{
@@ -138,7 +130,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontFamily: 'Georgia,serif', fontSize: '1.4rem', color: '#f5f0e6' }}>
-                    ${(order.total_cents / 100).toFixed(2)}
+                    ${(order.total_amount / 100).toFixed(2)}
                   </span>
                   <span style={{
                     fontSize: '0.65rem', letterSpacing: '.1em', textTransform: 'uppercase',
@@ -155,15 +147,12 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div>
                   <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Customer</p>
-                  <p style={{ fontSize: '0.9rem', color: '#f5f0e6', marginBottom: 2 }}>{order.customer_name}</p>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(245,240,230,0.5)' }}>{order.customer_email}</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>{order.customer_id.slice(0, 8).toUpperCase()}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Ship To</p>
                   <p style={{ fontSize: '0.85rem', color: '#f5f0e6', lineHeight: 1.6 }}>
-                    {order.shipping_name}<br />
-                    {order.shipping_line1}<br />
-                    {order.shipping_city}, {order.shipping_state} {order.shipping_zip}
+                    {order.shipping_address ?? '—'}
                   </p>
                 </div>
               </div>
@@ -188,7 +177,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                 <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(80,180,120,0.06)', border: '1px solid rgba(80,180,120,0.15)' }}>
                   <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Shipment</p>
                   <p style={{ fontSize: '0.85rem', color: '#f5f0e6', marginBottom: 4 }}>
-                    <span style={{ color: 'rgba(245,240,230,0.5)' }}>{order.tracking_carrier}</span>
+                    <span style={{ color: 'rgba(245,240,230,0.5)' }}>{order.carrier}</span>
                     {' '}
                     <span style={{ fontFamily: 'monospace' }}>{order.tracking_number}</span>
                   </p>
@@ -247,7 +236,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
       {fulfilling && (
         <FulfillModal
           orderId={fulfilling.id}
-          customerName={fulfilling.customer_name}
+          customerName={fulfilling.customer_id.slice(0, 8).toUpperCase()}
           onClose={() => setFulfilling(null)}
           onShipped={(data) => handleShipped(fulfilling.id, data)}
         />

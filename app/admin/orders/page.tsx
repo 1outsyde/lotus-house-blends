@@ -8,18 +8,22 @@ export default async function AdminOrders() {
   const rows = await sql`
     SELECT
       id, order_number,
-      customer_name, customer_email,
-      shipping_name, shipping_line1, shipping_city, shipping_state, shipping_zip,
-      subtotal_cents, total_cents,
-      status, items, notes,
-      tracking_number, tracking_carrier, tracking_url, shipped_at,
+      customer_id,
+      items,
+      total_amount, vendor_net,
+      status,
+      shipping_address,
+      tracking_number, carrier, shipped_at,
       created_at
     FROM orders
-    ORDER BY created_at ASC
+    WHERE business_id = ${process.env.OUTSYDE_BUSINESS_ID}
+    ORDER BY
+      CASE WHEN status != 'shipped' THEN 0 ELSE 1 END,
+      created_at DESC
   `;
 
   // Mark the most recently placed order as "newest" for the NEW badge
-  const newestId = rows.length > 0 ? rows[rows.length - 1].id : null;
+  const newestId = rows.length > 0 ? rows[0].id : null;
 
   const orders: OrderRow[] = rows.map((r: any) => ({
     ...r,
