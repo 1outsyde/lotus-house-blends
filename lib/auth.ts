@@ -1,17 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { neon } from "@neondatabase/serverless";
-import bcrypt from "bcryptjs";
-
-const sql = neon(process.env.DATABASE_URL!);
 
 export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
+  session: { strategy: "jwt" },
+  pages: { signIn: "/login" },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -22,25 +14,25 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const rows = await sql`
-          SELECT id, email, name, password, is_admin
-          FROM users
-          WHERE email = ${credentials.email}
-          LIMIT 1
-        `;
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/vendor/login-external`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-key": process.env.INTERNAL_API_KEY!,
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          }
+        );
 
-        const user = rows[0];
-        if (!user) return null;
+        if (!res.ok) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          isAdmin: user.is_admin,
-        };
+        const user = await res.json();
+        return user;
       },
     }),
   ],
@@ -49,6 +41,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.isAdmin = (user as any).isAdmin;
+        token.isVendor = (user as any).isVendor;
+        token.vendorId = (user as any).vendorId;
       }
       return token;
     },
@@ -56,6 +50,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).isAdmin = token.isAdmin;
+        (session.user as any).isVendor = token.isVendor;
+        (session.user as any).vendorId = token.vendorId;
       }
       return session;
     },
