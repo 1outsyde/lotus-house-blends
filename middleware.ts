@@ -1,24 +1,23 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server'
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-    if (isAdminRoute && !token?.isAdmin && !token?.isVendor) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
+  if (!pathname.startsWith('/admin')) return NextResponse.next()
+  if (pathname.startsWith('/admin/login')) return NextResponse.next()
 
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+  // The backend sets 'refreshToken' as the only httpOnly cookie.
+  // Access tokens live in localStorage — the browser never sends them in cookies.
+  // If refreshToken is absent the user definitely has no session.
+  const refreshToken = request.cookies.get('refreshToken')?.value
+
+  if (!refreshToken) {
+    return NextResponse.redirect(new URL('/login?redirect=/admin', request.url))
   }
-);
+
+  return NextResponse.next()
+}
 
 export const config = {
-  matcher: ["/admin/:path*"],
-};
+  matcher: ['/admin/:path*'],
+}
