@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
 import { detectCarrier, buildTrackingUrl, type Carrier } from '@/lib/lhb-config';
 import { sendShipmentNotificationEmail } from '@/lib/email';
+import { isAdminEmail } from '@/lib/auth-utils';
+
+const BACKEND = process.env.OUTSYDE_API_URL!
+
+async function getAuthUser(req: NextRequest) {
+  const auth = req.headers.get('authorization')
+  if (!auth) return null
+  const res = await fetch(`${BACKEND}/api/auth/me`, { headers: { Authorization: auth } })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.user ?? (data.id ? data : null)
+}
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session || !(session.user as any)?.isAdmin) {
+  const user = await getAuthUser(req)
+  if (!user || (user.role !== 'vendor' && user.role !== 'admin' && !isAdminEmail(user.email ?? ''))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

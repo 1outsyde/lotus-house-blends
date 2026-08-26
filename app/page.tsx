@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
+import { isAdminEmail } from "@/lib/auth-utils";
 import { PRODUCTS, Product } from "@/lib/products";
 import {
   addToCart,
@@ -173,8 +174,8 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 export default function HomePage() {
-  const { data: session } = useSession();
-  const isAdmin = (session?.user as any)?.isAdmin;
+  const { user, logout } = useAuth();
+  const isAdmin = user && (user.role === 'vendor' || user.role === 'admin' || isAdminEmail(user.email));
 
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -210,7 +211,7 @@ export default function HomePage() {
             <Link key={label} href={href.startsWith("#") ? href : `/${href}`} style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{label}</Link>
           ))}
 
-          {session ? (
+          {user ? (
             <>
               {isAdmin && (
                 <Link href="/admin/dashboard" style={{ color: "var(--lhb-gold)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>
@@ -218,7 +219,7 @@ export default function HomePage() {
                 </Link>
               )}
               <button
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={logout}
                 style={{ background: "none", border: "none", color: "rgba(255,255,255,.8)", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}
               >
                 Sign Out
