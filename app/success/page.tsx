@@ -9,7 +9,8 @@ const BODY    = "var(--font-jost), 'Jost', sans-serif";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get('orderId');
+  const orderId      = searchParams.get('orderId');
+  const orderNumber  = searchParams.get('order');
 
   return (
     <>
@@ -79,7 +80,7 @@ function SuccessContent() {
               fontFamily: BODY, fontSize: '.8rem', color: '#7A6A50',
               letterSpacing: '.06em', margin: '.5rem 0 1rem',
             }}>
-              Order #{orderId.slice(0, 8).toUpperCase()}
+              Order #{orderNumber ? String(orderNumber).padStart(4, '0') : orderId.slice(0, 8).toUpperCase()}
             </p>
           )}
 
@@ -87,8 +88,8 @@ function SuccessContent() {
             fontFamily: BODY, fontSize: '.9rem', color: '#4A3820',
             lineHeight: 1.7, margin: '0 0 2.5rem',
           }}>
-            Thank you for your order. You&apos;ll receive a confirmation email
-            shortly with your order details.
+            Thank you for your order. Lotus House Blends will be in touch
+            to update you about your order shortly.
           </p>
 
           <Link href="/" style={{
