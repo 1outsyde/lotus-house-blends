@@ -1,25 +1,48 @@
-import { neon } from '@neondatabase/serverless'
+'use client';
 
-const sql = neon(process.env.DATABASE_URL!)
+import { useEffect, useState } from 'react';
 
-export default async function AdminDashboard() {
-  const orders = await sql`
-    SELECT COUNT(*) as total_orders,
-           COALESCE(SUM(total_amount), 0) as total_revenue
-    FROM orders
-    WHERE business_id = ${process.env.OUTSYDE_BUSINESS_ID}
-  `
+interface Stats {
+  orderCount: number;
+  monthlyRevenueCents: number;
+}
 
-  const recentOrders = await sql`
-    SELECT id, order_number, customer_id, total_amount, status, created_at
-    FROM orders
-    WHERE business_id = ${process.env.OUTSYDE_BUSINESS_ID}
-    ORDER BY created_at DESC
-    LIMIT 5
-  `
+interface RecentOrder {
+  id: string;
+  orderNumber: number;
+  customerId: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+}
 
-  const totalOrders = orders[0]?.total_orders ?? 0
-  const totalRevenueCents = parseInt(orders[0]?.total_revenue ?? '0', 10)
+function getToken(): string | null {
+  return typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null;
+}
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch('/api/admin/dashboard', { headers })
+      .then(r => r.json())
+      .then((data) => {
+        if (data.stats) setStats(data.stats);
+        if (Array.isArray(data.orders)) {
+          const sorted = [...data.orders].sort(
+            (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setRecentOrders(sorted.slice(0, 5));
+        }
+      })
+      .catch(() => setError('Failed to load dashboard data.'));
+  }, []);
 
   return (
     <div>
@@ -30,21 +53,25 @@ export default async function AdminDashboard() {
         Lotus House Blends — overview
       </p>
 
+      {error && (
+        <p style={{ color: '#fca5a5', fontSize: '0.85rem', marginBottom: 24 }}>{error}</p>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 48, maxWidth: 600 }}>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '24px 28px' }}>
           <p style={{ fontSize: '0.7rem', letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 10 }}>
             Total Orders
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '2.5rem', color: '#f5f0e6' }}>
-            {totalOrders}
+            {stats ? stats.orderCount : '—'}
           </p>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '24px 28px' }}>
           <p style={{ fontSize: '0.7rem', letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 10 }}>
-            Total Revenue
+            Monthly Revenue
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '2.5rem', color: '#f5f0e6' }}>
-            ${(totalRevenueCents / 100).toFixed(2)}
+            {stats ? `$${(stats.monthlyRevenueCents / 100).toFixed(2)}` : '—'}
           </p>
         </div>
       </div>
@@ -64,26 +91,37 @@ export default async function AdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {recentOrders.map((order: any) => (
+            {recentOrders.map((order) => (
               <tr key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>
-                  #{String(order.order_number).padStart(4, '0')}
+                  #{String(order.orderNumber).padStart(4, '0')}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>{String(order.customer_id).slice(0, 8).toUpperCase()}</td>
-                <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>${(order.total_amount / 100).toFixed(2)}</td>
+                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>
+                  {String(order.customerId).slice(0, 8).toUpperCase()}
+                </td>
+                <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>
+                  ${(order.totalAmount / 100).toFixed(2)}
+                </td>
                 <td style={{ padding: '14px 16px' }}>
                   <span style={{ fontSize: '0.65rem', letterSpacing: '.1em', textTransform: 'uppercase', padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f5f0e6' }}>
                     {order.status}
                   </span>
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>
-                  {new Date(order.created_at).toLocaleDateString()}
+                  {new Date(order.createdAt).toLocaleDateString()}
                 </td>
               </tr>
             ))}
+            {recentOrders.length === 0 && !error && (
+              <tr>
+                <td colSpan={5} style={{ padding: '32px 16px', textAlign: 'center', color: 'rgba(245,240,230,0.3)', fontSize: '0.85rem' }}>
+                  {stats === null ? 'Loading…' : 'No orders yet.'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
-  )
+  );
 }
