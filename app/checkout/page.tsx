@@ -123,7 +123,7 @@ function AddressFields({
         onChange={setters.setLine2} autoComplete={`${prefix} address-line2`} />
 
       {/* City / State / ZIP row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 120px', gap: '1rem' }}>
+      <div className="co-city-row" style={{ display: 'grid', gridTemplateColumns: '1fr 80px 120px', gap: '1rem' }}>
         <div style={fieldWrap}>
           <label htmlFor={`${prefix}City`} style={labelSt}>City</label>
           <input id={`${prefix}City`} type="text" value={values.city} required
@@ -385,6 +385,9 @@ function CheckoutForm() {
         @media (max-width: 768px) {
           .co-grid { grid-template-columns: 1fr !important; }
           .co-summary { order: -1; }
+        }
+        @media (max-width: 640px) {
+          .co-city-row { grid-template-columns: 1fr !important; }
         }
         * { box-sizing: border-box; }
       `}</style>

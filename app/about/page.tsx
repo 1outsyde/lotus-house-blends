@@ -20,6 +20,13 @@ const CSS_VARS = `
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--lhb-parchment); color: #1a1a18; font-family: var(--font-body); }
+  @media (max-width: 640px) {
+    .lhb-nav { padding: 0 1rem !important; }
+    .lhb-nav-links { gap: .75rem !important; }
+    .lhb-story { grid-template-columns: 1fr !important; min-height: auto !important; }
+    .lhb-story-img { display: none !important; }
+    .lhb-story-text { padding: 2.5rem 1.25rem !important; }
+  }
 `;
 
 export default function AboutPage() {
@@ -29,6 +36,7 @@ export default function AboutPage() {
 
       {/* NAV */}
       <nav
+        className="lhb-nav"
         style={{
           background: "var(--lhb-black)",
           borderBottom: "1px solid rgba(200,168,130,.2)",
@@ -46,7 +54,7 @@ export default function AboutPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-dark.png" alt="Lotus House Blends" width={140} />
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
+        <div className="lhb-nav-links" style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
           {[
             { label: "Shop", href: "/#shop" },
             { label: "Our Story", href: "/about" },
@@ -132,6 +140,7 @@ export default function AboutPage() {
 
       {/* STORY SECTION */}
       <section
+        className="lhb-story"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -139,6 +148,7 @@ export default function AboutPage() {
         }}
       >
         <div
+          className="lhb-story-img"
           style={{
             position: "relative",
             overflow: "hidden",
@@ -153,6 +163,7 @@ export default function AboutPage() {
           />
         </div>
         <div
+          className="lhb-story-text"
           style={{
             padding: "4rem 3.5rem",
             display: "flex",

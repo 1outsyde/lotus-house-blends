@@ -30,6 +30,11 @@ const CSS_VARS = `
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--lhb-parchment); color: #1a1a18; font-family: var(--font-body); }
+  @media (max-width: 640px) {
+    .lhb-nav { padding: 0 1rem !important; }
+    .lhb-nav-links { gap: .75rem !important; }
+    .lhb-product-detail { grid-template-columns: 1fr !important; gap: 2rem !important; padding: 0 1rem !important; margin: 1.5rem auto !important; }
+  }
 `;
 
 // ─── Blend Config ─────────────────────────────────────────────────────────────
@@ -409,6 +414,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
 
       {/* NAV */}
       <nav
+        className="lhb-nav"
         style={{
           position: "sticky",
           top: 0,
@@ -426,7 +432,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-dark.png" alt="Lotus House Blends" width={140} />
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
+        <div className="lhb-nav-links" style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
           {[
             { label: "Shop", href: "/#shop" },
             { label: "Our Story", href: "/about" },
@@ -515,6 +521,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
 
       {/* PRODUCT DETAIL */}
       <div
+        className="lhb-product-detail"
         style={{
           maxWidth: 1100,
           margin: "3rem auto",
