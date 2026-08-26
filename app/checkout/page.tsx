@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -241,9 +241,9 @@ function CheckoutForm() {
 
   const [items, setItems] = useState<CartItem[]>([]);
 
-  // Contact
-  const [customerName,  setCustomerName]  = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  // Auth
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Shipping
   const [shipName,  setShipName]  = useState('');
@@ -275,6 +275,19 @@ function CheckoutForm() {
     const cart = getCart();
     if (cart.length === 0) { router.push('/'); return; }
     setItems(cart);
+
+    // Auth check — redirect to login if no session
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.authenticated && !d.user) {
+          router.push('/login?redirect=/checkout');
+        } else {
+          setUserId(d.user?.id ?? d.id ?? null);
+          setAuthed(true);
+        }
+      })
+      .catch(() => router.push('/login?redirect=/checkout'));
   }, [router]);
 
   const subtotal     = items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -291,7 +304,7 @@ function CheckoutForm() {
       const coRes  = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: getCart(), customerEmail }),
+        body: JSON.stringify({ items: getCart() }),
       });
       const coData = await coRes.json() as { clientSecret?: string; paymentIntentId?: string; error?: string };
       if (!coRes.ok || !coData.clientSecret) throw new Error(coData.error ?? 'Failed to create payment.');
@@ -302,42 +315,55 @@ function CheckoutForm() {
       const result = await stripe.confirmCardPayment(coData.clientSecret, {
         payment_method: {
           card,
-          billing_details: { name: cardholderName, email: customerEmail },
+          billing_details: { name: cardholderName },
         },
       });
       if (result.error) { setError(result.error.message ?? 'Payment failed.'); setLoading(false); return; }
 
       // Step 3 — save order
-      const orRes  = await fetch('/api/orders', {
+      const orRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentIntentId: coData.paymentIntentId,
-          customerName, customerEmail,
-          shippingName: shipName,   shippingLine1: shipLine1,
-          shippingLine2: shipLine2, shippingCity: shipCity,
-          shippingState: shipState, shippingZip: shipZip,
-          billingSameAsShipping: billingSame,
-          billingName:  billingSame ? shipName  : billName,
-          billingLine1: billingSame ? shipLine1 : billLine1,
-          billingLine2: billingSame ? shipLine2 : billLine2,
-          billingCity:  billingSame ? shipCity  : billCity,
-          billingState: billingSame ? shipState : billState,
-          billingZip:   billingSame ? shipZip   : billZip,
-          items: getCart(), subtotalCents, totalCents: subtotalCents,
+          customerId: userId,
+          shippingAddress: `${shipLine1}${shipLine2 ? ', ' + shipLine2 : ''}, ${shipCity}, ${shipState} ${shipZip}`,
+          items: getCart().map(i => ({
+            id: i.id,
+            name: i.name,
+            qty: i.qty,
+            price: i.price,
+            image: i.image,
+          })),
+          totalCents: subtotalCents,
         }),
       });
-      const orData = await orRes.json() as { orderId?: string; error?: string };
+      const orData = await orRes.json() as {
+        orderId?: string;
+        orderNumber?: number;
+        error?: string;
+      };
       if (!orRes.ok) throw new Error(orData.error ?? 'Failed to save order.');
 
       // Step 4 — clear and redirect
       clearCart();
-      router.push(`/success?orderId=${orData.orderId}`);
+      router.push(`/success?orderId=${orData.orderId}&order=${String(orData.orderNumber ?? '').padStart(4, '0')}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
       setLoading(false);
     }
   };
+
+  if (authed === null) {
+    return (
+      <div style={{
+        textAlign: 'center', padding: '6rem 2rem',
+        fontFamily: BODY, color: T.textMuted,
+      }}>
+        Verifying session…
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -370,16 +396,7 @@ function CheckoutForm() {
         }}>
           {/* ── LEFT: Form ─────────────────────────────────────────── */}
           <div>
-            {/* 1. Contact */}
-            <section style={{ marginBottom: '2.5rem' }}>
-              <h2 style={sectionHead}>Contact Information</h2>
-              <Input id="customerName" label="Full Name" value={customerName}
-                onChange={setCustomerName} required autoComplete="name" />
-              <Input id="customerEmail" label="Email Address" type="email"
-                value={customerEmail} onChange={setCustomerEmail} required autoComplete="email" />
-            </section>
-
-            {/* 2. Shipping */}
+            {/* 1. Shipping */}
             <section style={{ marginBottom: '2.5rem' }}>
               <h2 style={sectionHead}>Shipping Address</h2>
               <AddressFields prefix="shipping"
@@ -393,7 +410,7 @@ function CheckoutForm() {
               </div>
             </section>
 
-            {/* 3. Billing */}
+            {/* 2. Billing */}
             <section style={{ marginBottom: '2.5rem' }}>
               <h2 style={sectionHead}>Billing Address</h2>
               <label style={{ display: 'flex', alignItems: 'center', gap: '.6rem',
@@ -418,7 +435,7 @@ function CheckoutForm() {
               )}
             </section>
 
-            {/* 4. Payment */}
+            {/* 3. Payment */}
             <section style={{ marginBottom: '2rem' }}>
               <h2 style={sectionHead}>Payment Information</h2>
 
