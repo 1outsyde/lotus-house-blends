@@ -36,22 +36,21 @@ export default async function AdminDashboard() {
   const token = cookieStore.get('outsyde_access_token')?.value ?? '';
 
   const apiUrl = process.env.OUTSYDE_API_URL;
-  const businessId = process.env.NEXT_PUBLIC_OUTSYDE_BUSINESS_ID;
 
   let orders: Order[] = [];
   let fetchError = '';
 
   try {
     const res = await fetch(
-      `${apiUrl}/api/business/orders?businessId=${businessId}`,
+      `${apiUrl}/api/business/orders`,
       {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       }
     );
     if (res.ok) {
-      const data: unknown = await res.json();
-      orders = Array.isArray(data) ? data : ((data as { orders?: Order[] }).orders ?? []);
+      const { orders: fetched } = await res.json() as { orders: Order[] };
+      orders = fetched ?? [];
     } else {
       fetchError = `Failed to load orders (${res.status}).`;
     }
