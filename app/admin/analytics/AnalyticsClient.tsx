@@ -260,7 +260,7 @@ export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyD
       </div>
 
       {/* Section C — Revenue Forecast */}
-      {forecast && (
+      {forecast && forecast.projected_month > 0 && (
         <div style={{ background: '#fff', border: `1px solid rgba(30,48,32,0.1)`, borderRadius: 8, padding: '24px', marginBottom: 28 }}>
           <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.25rem', fontWeight: 500, color: MOSS, margin: '0 0 16px' }}>Revenue Forecast</h2>
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
@@ -282,7 +282,11 @@ export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyD
               <div>
                 <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.5)', margin: '0 0 4px' }}>Confidence</p>
                 <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.5rem', fontWeight: 600, color: GOLD, margin: 0 }}>
-                  {(forecast.confidence * 100).toFixed(0)}%
+                  {forecast.confidence == null
+                    ? '—'
+                    : forecast.confidence <= 1
+                      ? `${(forecast.confidence * 100).toFixed(0)}%`
+                      : `${Math.round(forecast.confidence)}%`}
                 </p>
               </div>
             )}
