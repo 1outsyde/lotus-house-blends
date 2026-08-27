@@ -6,16 +6,22 @@ const OUTSYDE_API_URL = process.env.OUTSYDE_API_URL!
 const OUTSYDE_BUSINESS_ID = process.env.OUTSYDE_BUSINESS_ID!
 
 async function fetchBFF(token: string, cookieHeader: string, path: string) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'x-business-id': OUTSYDE_BUSINESS_ID,
-    Authorization: `Bearer ${token}`,
-    Cookie: cookieHeader,
-  }
   try {
-    const res = await fetch(`${OUTSYDE_API_URL}${path}`, { headers, cache: 'no-store' })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    const res = await fetch(`${OUTSYDE_API_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-business-id': OUTSYDE_BUSINESS_ID,
+        Authorization: `Bearer ${token}`,
+        Cookie: cookieHeader,
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
     if (!res.ok) return null
-    return res.json().catch(() => null)
+    return await res.json().catch(() => null)
   } catch {
     return null
   }

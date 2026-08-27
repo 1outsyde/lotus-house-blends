@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface StatData {
   orderCount: number
@@ -165,6 +165,22 @@ function exportCSV(yoy: YoYMonth[], period: PeriodKey) {
 
 export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyData, forecast, yoy }: AnalyticsClientProps) {
   const [period, setPeriod] = useState<PeriodKey>('weekly')
+  const [liveStats, setLiveStats] = useState(stats)
+
+  useEffect(() => {
+    if (liveStats !== null) return
+    const retry = async () => {
+      try {
+        const res = await fetch('/api/admin/analytics/stats')
+        if (!res.ok) return
+        const data = await res.json()
+        if (data?.stats) setLiveStats(data.stats)
+      } catch {
+        // silent fail
+      }
+    }
+    retry()
+  }, [liveStats])
 
   const chartData: PeriodData[] = period === 'daily'
     ? (dailyData as DayData[]).map(d => ({ label: d.label || d.date, revenue_cents: d.revenue_cents, order_count: d.order_count }))
@@ -173,11 +189,11 @@ export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyD
 
   const handleExport = useCallback(() => exportCSV(yoy, period), [yoy, period])
 
-  const avgOrderCents = stats && stats.orderCount > 0
-    ? Math.round(stats.monthlyRevenueCents / stats.orderCount)
+  const avgOrderCents = liveStats && liveStats.orderCount > 0
+    ? Math.round(liveStats.monthlyRevenueCents / liveStats.orderCount)
     : 0
 
-  const isEmpty = !stats && dailyData.length === 0 && weeklyData.length === 0 && monthlyData.length === 0 && !forecast && yoy.length === 0
+  const isEmpty = !liveStats && dailyData.length === 0 && weeklyData.length === 0 && monthlyData.length === 0 && !forecast && yoy.length === 0
 
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
@@ -212,20 +228,20 @@ export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyD
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 36 }}>
         <StatCard
           label="Monthly Revenue"
-          value={stats ? fmt(stats.monthlyRevenueCents) : '—'}
+          value={liveStats ? fmt(liveStats.monthlyRevenueCents) : '—'}
         />
         <StatCard
           label="Orders (MTD)"
-          value={stats ? String(stats.orderCount) : '—'}
+          value={liveStats ? String(liveStats.orderCount) : '—'}
         />
         <StatCard
           label="Avg Order Value"
-          value={stats && stats.orderCount > 0 ? fmt(avgOrderCents) : '—'}
+          value={liveStats && liveStats.orderCount > 0 ? fmt(avgOrderCents) : '—'}
         />
         <StatCard
           label="Avg Rating"
-          value={stats ? (stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '—') : '—'}
-          sub={stats && stats.averageRating > 0 ? 'out of 5' : undefined}
+          value={liveStats ? (liveStats.averageRating > 0 ? liveStats.averageRating.toFixed(1) : '—') : '—'}
+          sub={liveStats && liveStats.averageRating > 0 ? 'out of 5' : undefined}
         />
       </div>
 
