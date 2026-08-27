@@ -44,7 +44,7 @@ export default async function AdminOrders() {
       const newestId =
         raw.length > 0
           ? [...raw].sort(
-              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
             )[0].id
           : null;
 
@@ -54,24 +54,36 @@ export default async function AdminOrders() {
         const bPaid = b.status === 'paid' ? 0 : 1;
         if (aPaid !== bPaid) return aPaid - bPaid;
         if (aPaid === 0) {
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
         }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       });
 
-      orders = sorted.map((r) => ({
-        id: r.id,
-        order_number: r.order_number,
-        customer_id: r.customer_id,
-        items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items ?? []),
-        total_amount: r.total_amount,
-        status: r.status ?? 'pending',
-        shipping_address: r.shipping_address ?? null,
-        created_at: r.created_at,
-        tracking_number: r.tracking_number ?? null,
-        carrier: r.carrier ?? null,
-        isNewest: r.id === newestId,
-      }));
+      orders = sorted.map((r) => {
+        let parsedItems: Array<{ name: string; qty: number; price: number }> = [];
+        if (r.items) {
+          if (typeof r.items === 'string') {
+            try { const p = JSON.parse(r.items); parsedItems = Array.isArray(p) ? p : []; } catch { parsedItems = []; }
+          } else {
+            parsedItems = Array.isArray(r.items) ? r.items : [];
+          }
+        }
+        const rawAddr = r.shipping_address as unknown;
+        const safeAddr = typeof rawAddr === 'string' ? rawAddr : rawAddr == null ? null : JSON.stringify(rawAddr);
+        return {
+          id: r.id,
+          order_number: r.order_number ?? 0,
+          customer_id: r.customer_id ?? '',
+          items: parsedItems,
+          total_amount: r.total_amount ?? 0,
+          status: r.status ?? 'pending',
+          shipping_address: safeAddr,
+          created_at: r.created_at ?? new Date().toISOString(),
+          tracking_number: r.tracking_number ?? null,
+          carrier: r.carrier ?? null,
+          isNewest: r.id === newestId,
+        };
+      });
     } else {
       fetchError = `Failed to load orders (${res.status}).`;
     }
