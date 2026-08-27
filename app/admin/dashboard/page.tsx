@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import DashboardCalendar from './DashboardCalendar';
 
 interface Order {
   id: string;
@@ -25,26 +26,10 @@ function fmt(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-const statCard = {
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  padding: '24px 28px',
-  minWidth: 160,
-} as const;
-
-const statLabel = {
-  fontSize: '0.7rem',
-  letterSpacing: '.16em',
-  textTransform: 'uppercase' as const,
-  color: 'rgba(245,240,230,0.4)',
-  marginBottom: 10,
-};
-
-const statValue = {
-  fontFamily: 'Georgia, serif',
-  fontSize: '2.5rem',
-  color: '#f5f0e6',
-};
+function toDateKey(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -84,119 +69,78 @@ export default async function AdminDashboard() {
     .filter((o) => o.status === 'paid')
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] ?? null;
 
-  const recentOrders = [...orders]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
+  // Build date → statuses map for calendar
+  const dateMap: Record<string, string[]> = {};
+  for (const order of orders) {
+    if (!order.created_at) continue;
+    const key = toDateKey(order.created_at);
+    if (!dateMap[key]) dateMap[key] = [];
+    dateMap[key].push(order.status);
+  }
+
+  const statCards = [
+    { label: 'Total Orders', value: String(totalOrders) },
+    { label: 'Total Revenue', value: fmt(totalRevenueCents) },
+    { label: 'Avg Order Value', value: fmt(avgOrderValueCents) },
+  ];
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '2rem', fontWeight: 500, marginBottom: 8 }}>
+      <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.2rem', fontWeight: 500, color: '#1E3020', margin: '0 0 32px' }}>
         Dashboard
       </h1>
-      <p style={{ color: 'rgba(245,240,230,0.5)', fontSize: '0.85rem', marginBottom: 40 }}>
-        Lotus House Blends — overview
-      </p>
 
       {fetchError && (
-        <p style={{ color: '#fca5a5', fontSize: '0.85rem', marginBottom: 24 }}>{fetchError}</p>
+        <p style={{ color: '#C0392B', fontSize: '0.85rem', marginBottom: 20, fontFamily: 'Jost, sans-serif' }}>{fetchError}</p>
       )}
 
       {/* Stat cards */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 48 }}>
-        <div style={statCard}>
-          <p style={statLabel}>Total Orders</p>
-          <p style={statValue}>{totalOrders}</p>
-        </div>
-        <div style={statCard}>
-          <p style={statLabel}>Total Revenue</p>
-          <p style={statValue}>{fmt(totalRevenueCents)}</p>
-        </div>
-        <div style={statCard}>
-          <p style={statLabel}>Avg Order Value</p>
-          <p style={statValue}>{fmt(avgOrderValueCents)}</p>
-        </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 36 }}>
+        {statCards.map(({ label, value }) => (
+          <div key={label} style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', minWidth: 140 }}>
+            <p style={{ fontSize: '0.6rem', letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>
+              {label}
+            </p>
+            <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.2rem', fontWeight: 600, color: '#1E3020', margin: 0 }}>
+              {value}
+            </p>
+          </div>
+        ))}
       </div>
 
+      {/* Calendar */}
+      <DashboardCalendar dateMap={dateMap} />
+
       {/* Up Next */}
-      <div style={{ marginBottom: 48 }}>
-        <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '1.3rem', fontWeight: 400, marginBottom: 16 }}>
+      <div>
+        <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.5rem', fontWeight: 500, color: '#1E3020', margin: '0 0 16px' }}>
           Up Next
         </h2>
+
         {upNext ? (
-          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '24px 28px' }}>
-            <p style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'rgba(245,240,230,0.6)', marginBottom: 8 }}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px' }}>
+            <p style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'rgba(30,48,32,0.5)', marginBottom: 8 }}>
               #{String(upNext.order_number).padStart(4, '0')}
             </p>
-            <p style={{ fontSize: '0.85rem', color: '#f5f0e6', marginBottom: 6 }}>
+            <p style={{ fontSize: '0.95rem', color: '#1E3020', fontFamily: 'Jost, sans-serif', marginBottom: 4 }}>
               {upNext.shipping_address ?? '—'}
             </p>
-            <p style={{ fontSize: '0.8rem', color: 'rgba(245,240,230,0.5)', marginBottom: 12 }}>
+            <p style={{ fontSize: '0.82rem', color: 'rgba(30,48,32,0.58)', fontFamily: 'Jost, sans-serif', marginBottom: 12 }}>
               {itemsSummary(upNext.items)}
             </p>
-            <p style={{ fontSize: '0.9rem', color: '#f5f0e6', marginBottom: 16 }}>
+            <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.25rem', fontWeight: 500, color: '#1E3020', marginBottom: 20 }}>
               {fmt(upNext.total_amount)}
             </p>
             <Link
               href="/admin/orders"
-              style={{ fontSize: '0.75rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.6)', textDecoration: 'none' }}
+              style={{ fontSize: '0.65rem', letterSpacing: '.15em', textTransform: 'uppercase', color: '#1E3020', textDecoration: 'none', fontFamily: 'Jost, sans-serif', borderBottom: '1px solid rgba(30,48,32,0.28)', paddingBottom: 2 }}
             >
               Go to Orders →
             </Link>
           </div>
         ) : (
-          <p style={{ color: 'rgba(245,240,230,0.4)', fontSize: '0.9rem' }}>All caught up.</p>
+          <p style={{ color: 'rgba(30,48,32,0.48)', fontSize: '0.9rem', fontFamily: 'Jost, sans-serif' }}>All caught up.</p>
         )}
-      </div>
-
-      {/* Recent Orders */}
-      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '1.3rem', fontWeight: 400, marginBottom: 20 }}>
-        Recent Orders
-      </h2>
-      <div style={{ border: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {['Order', 'Customer', 'Amount', 'Status', 'Date'].map((h) => (
-                <th
-                  key={h}
-                  style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', fontWeight: 400 }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {recentOrders.map((order) => (
-              <tr key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>
-                  #{String(order.order_number).padStart(4, '0')}
-                </td>
-                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)', fontFamily: 'monospace' }}>
-                  {String(order.customer_id).slice(0, 8).toUpperCase()}
-                </td>
-                <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#f5f0e6' }}>
-                  {fmt(order.total_amount)}
-                </td>
-                <td style={{ padding: '14px 16px' }}>
-                  <span style={{ fontSize: '0.65rem', letterSpacing: '.1em', textTransform: 'uppercase', padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#f5f0e6' }}>
-                    {order.status}
-                  </span>
-                </td>
-                <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>
-                  {new Date(order.created_at).toLocaleDateString()}
-                </td>
-              </tr>
-            ))}
-            {recentOrders.length === 0 && !fetchError && (
-              <tr>
-                <td colSpan={5} style={{ padding: '32px 16px', textAlign: 'center', color: 'rgba(245,240,230,0.3)', fontSize: '0.85rem' }}>
-                  No orders yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
       </div>
     </div>
   );
