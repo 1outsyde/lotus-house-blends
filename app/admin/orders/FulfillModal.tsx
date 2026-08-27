@@ -30,7 +30,7 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
     setError('');
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null;
+      const token = document.cookie.split(';').find(c => c.trim().startsWith('outsyde_access_token='))?.split('=')[1];
       const res = await fetch(`/api/orders/${orderId}/fulfill`, {
         method: 'PATCH',
         headers: {
