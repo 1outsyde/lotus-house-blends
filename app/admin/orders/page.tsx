@@ -12,6 +12,7 @@ interface RawOrder {
   created_at: string;
   tracking_number: string | null;
   carrier: string | null;
+  customer_name: string | null;
 }
 
 export default async function AdminOrders() {
@@ -78,6 +79,7 @@ export default async function AdminOrders() {
           created_at: r.created_at ?? new Date().toISOString(),
           tracking_number: r.tracking_number ?? null,
           carrier: r.carrier ?? null,
+          customer_name: r.customer_name ?? null,
           isNewest: r.id === newestId,
         };
       });

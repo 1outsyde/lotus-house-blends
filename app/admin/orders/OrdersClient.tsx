@@ -8,6 +8,7 @@ export interface OrderRow {
   id: string;
   order_number: number;
   customer_id: string;
+  customer_name: string | null;
   items: Array<{ name: string; qty: number; price: number }>;
   total_amount: number;
   status: string;
@@ -16,6 +17,17 @@ export interface OrderRow {
   tracking_number: string | null;
   carrier: string | null;
   isNewest?: boolean;
+}
+
+function formatAddress(raw: string | object | null | undefined): string {
+  if (!raw) return '—';
+  try {
+    const addr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!addr.line1 && !addr.city) return typeof raw === 'string' ? raw : '—';
+    return `${addr.line1}\n${addr.city}, ${addr.state} ${addr.zipCode}`;
+  } catch {
+    return typeof raw === 'string' ? raw : '—';
+  }
 }
 
 const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
@@ -138,7 +150,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                     fontSize: '0.6rem', letterSpacing: '.1em', textTransform: 'uppercase',
                     padding: '4px 10px', borderRadius: 2,
                     background: badge.bg, color: badge.text,
-                    fontFamily: 'Jost, sans-serif',
+                    fontFamily: 'Jost, sans-serif', whiteSpace: 'nowrap',
                   }}>
                     {order.status}
                   </span>
@@ -149,12 +161,12 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
               <div className="lhb-order-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(30,48,32,0.08)' }}>
                 <div>
                   <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Customer</p>
-                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.6)' }}>{(order.customer_id ?? '').slice(0, 8).toUpperCase()}</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.6)' }}>{order.customer_name ?? (order.customer_id ?? '').slice(0, 8).toUpperCase()}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Ship To</p>
                   <p style={{ fontSize: '0.85rem', color: '#1E3020', lineHeight: 1.6, fontFamily: 'Jost, sans-serif' }}>
-                    {order.shipping_address ?? '—'}
+                    <span style={{ whiteSpace: 'pre-line' }}>{formatAddress(order.shipping_address)}</span>
                   </p>
                 </div>
               </div>
@@ -167,7 +179,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <span style={{ color: '#1E3020', fontFamily: 'Jost, sans-serif' }}>{item.name}</span>
                       <span style={{ color: 'rgba(30,48,32,0.55)', fontFamily: 'Jost, sans-serif' }}>
-                        ×{item.qty} — ${(item.price * item.qty).toFixed(2)}
+                        ×{item.qty} — ${((item.price / 100) * item.qty).toFixed(2)}
                       </span>
                     </div>
                   ))}
