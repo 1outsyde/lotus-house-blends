@@ -36,10 +36,7 @@ export default async function AdminOrders() {
       }
     );
     if (res.ok) {
-      const data: unknown = await res.json();
-      const raw: RawOrder[] = Array.isArray(data)
-        ? data
-        : ((data as { orders?: RawOrder[] }).orders ?? []);
+      const { orders: raw = [] } = await res.json() as { orders?: RawOrder[] };
 
       const newestId =
         raw.length > 0
