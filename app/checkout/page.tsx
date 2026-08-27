@@ -300,16 +300,35 @@ function CheckoutForm() {
     setError('');
 
     try {
-      // Step 1 — create PaymentIntent
+      // Step 1 — create order record + PaymentIntent via backend
+      // The backend creates the DB order row and returns a clientSecret.
+      // Shipping address is passed here so the order record is complete
+      // before payment is confirmed.
       const coRes  = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: getCart() }),
+        body: JSON.stringify({
+          items: getCart(),
+          shippingAddress: {
+            line1: shipLine1,
+            line2: shipLine2 || undefined,
+            city: shipCity,
+            state: shipState,
+            zipCode: shipZip,
+          },
+        }),
       });
-      const coData = await coRes.json() as { clientSecret?: string; paymentIntentId?: string; error?: string };
+      const coData = await coRes.json() as {
+        clientSecret?: string;
+        paymentIntentId?: string;
+        orderId?: string;
+        feeBreakdown?: { totalChargedToConsumerCents: number };
+        error?: string;
+        success?: boolean;
+      };
       if (!coRes.ok || !coData.clientSecret) throw new Error(coData.error ?? 'Failed to create payment.');
 
-      // Step 2 — confirm card
+      // Step 2 — confirm card payment
       const card = elements.getElement(CardElement);
       if (!card) throw new Error('Card element not found.');
       const result = await stripe.confirmCardPayment(coData.clientSecret, {
@@ -320,34 +339,11 @@ function CheckoutForm() {
       });
       if (result.error) { setError(result.error.message ?? 'Payment failed.'); setLoading(false); return; }
 
-      // Step 3 — save order
-      const orRes = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paymentIntentId: coData.paymentIntentId,
-          customerId: userId,
-          shippingAddress: `${shipLine1}${shipLine2 ? ', ' + shipLine2 : ''}, ${shipCity}, ${shipState} ${shipZip}`,
-          items: getCart().map(i => ({
-            id: i.id,
-            name: i.name,
-            qty: i.qty,
-            price: i.price,
-            image: i.image,
-          })),
-          totalCents: subtotalCents,
-        }),
-      });
-      const orData = await orRes.json() as {
-        orderId?: string;
-        orderNumber?: number;
-        error?: string;
-      };
-      if (!orRes.ok) throw new Error(orData.error ?? 'Failed to save order.');
-
-      // Step 4 — clear and redirect
+      // Step 3 — clear and redirect
+      // The backend webhook marks the order paid and fires confirmation emails.
+      // No separate /api/orders call is needed.
       clearCart();
-      router.push(`/success?orderId=${orData.orderId}&order=${String(orData.orderNumber ?? '').padStart(4, '0')}`);
+      router.push(`/success?orderId=${coData.orderId ?? ''}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
       setLoading(false);

@@ -1,61 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { LHB_CONFIG } from '@/lib/lhb-config';
 
 interface CartItem {
   id: string;
   name: string;
-  price: number;
+  price: number; // dollars
   qty: number;
   image: string;
 }
 
 export async function POST(req: NextRequest) {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    return NextResponse.json({ error: 'Stripe secret key is not configured.' }, { status: 500 });
+  const backendUrl = process.env.OUTSYDE_API_URL;
+  if (!backendUrl) {
+    return NextResponse.json({ error: 'Backend URL not configured.' }, { status: 500 });
   }
 
-  const stripe = new Stripe(key, { apiVersion: '2026-07-29.dahlia' });
-
+  let body: { items?: CartItem[]; customerEmail?: string; shippingAddress?: Record<string, string> };
   try {
-    const body = await req.json();
-    const items: CartItem[] = body.items ?? [];
-    const customerEmail: string = body.customerEmail ?? '';
-
-    if (!items.length) {
-      return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
-    }
-
-    const amount = Math.round(
-      items.reduce((sum, item) => sum + item.price * item.qty, 0) * 100
-    );
-
-    const platformFee = Math.round(amount * 0.02);
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: 'usd',
-      receipt_email: customerEmail || undefined,
-      metadata: {
-        businessId: LHB_CONFIG.businessId,
-        items: JSON.stringify(items),
-      },
-      automatic_payment_methods: { enabled: true },
-      // Route payment through Stripe Connect: 2% platform fee stays with Outsyde,
-      // remainder transfers to LHB's connected account on capture.
-      application_fee_amount: platformFee,
-      transfer_data: {
-        destination: LHB_CONFIG.stripeAccountId,
-      },
-    });
-
-    return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
+
+  const rawItems: CartItem[] = body.items ?? [];
+  if (!rawItems.length) {
+    return NextResponse.json({ error: 'No items in cart.' }, { status: 400 });
+  }
+
+  // Transform LHB cart items to the shape expected by POST /api/cart/payment-intent.
+  // Each item needs vendorId (= LHB's businessId), productId, name, priceCents, quantity.
+  const backendItems = rawItems.map(item => ({
+    vendorId: LHB_CONFIG.businessId,
+    productId: item.id,
+    name: item.name,
+    priceCents: Math.round(item.price * 100),
+    quantity: item.qty,
+  }));
+
+  const backendBody: Record<string, unknown> = {
+    items: backendItems,
+  };
+
+  // Forward shipping address if the frontend supplied one.
+  if (body.shippingAddress) {
+    backendBody.shippingAddress = body.shippingAddress;
+  }
+
+  let backendRes: Response;
+  try {
+    backendRes = await fetch(`${backendUrl}/api/cart/payment-intent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Forward the auth cookie so the backend can identify the user.
+        Cookie: req.headers.get('cookie') ?? '',
+      },
+      body: JSON.stringify(backendBody),
+    });
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable.' }, { status: 503 });
+  }
+
+  const data = await backendRes.json().catch(() => ({}));
+  return NextResponse.json(data, { status: backendRes.status });
 }
