@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { isAdminEmail } from "@/lib/auth-utils";
-import { PRODUCTS, Product } from "@/lib/products";
 import {
   addToCart,
   getCart,
@@ -13,6 +12,66 @@ import {
   subscribe,
   CartItem,
 } from "@/lib/cart";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  status: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  type: string;
+  blend: string;
+  price: number;
+  bundleLabel: string;
+  description: string;
+  image: string;
+  slug: string;
+}
+
+function nameToSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function inferBlend(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('dream temple')) return 'night';
+  if (lower.includes('heart flow')) return 'midday';
+  return 'morning';
+}
+
+function inferType(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('cone') || lower.includes('pre-roll') || lower.includes('preroll')) return 'prerolls';
+  if (lower.includes('tea')) return 'tea';
+  return 'herbs';
+}
+
+function mapApiProduct(p: ApiProduct): Product {
+  const type = inferType(p.name);
+  const bundleLabel = type === 'prerolls' ? 'Bundle: 3 for $20' : type === 'tea' ? 'Bundle: 3 for $25' : 'Bundle: 3 for $35';
+  return {
+    id: p.id,
+    name: p.name,
+    type,
+    blend: inferBlend(p.name),
+    price: p.price / 100,
+    bundleLabel,
+    description: p.description ?? '',
+    image: p.imageUrl ?? '',
+    slug: nameToSlug(p.name),
+  };
+}
+
+// ─── CSS ──────────────────────────────────────────────────────────────────────
 
 const CSS_VARS = `
   :root {
@@ -180,7 +239,7 @@ function ProductCard({ product }: { product: Product }) {
         <div className="pcard-footer">
           <div>
             <span className="pcard-price">${product.price.toFixed(2)}</span>
-            <span className="pcard-bundle">{product.bundleLabel}</span>
+            {product.bundleLabel && <span className="pcard-bundle">{product.bundleLabel}</span>}
           </div>
           <button className="pcard-add" onClick={handleAdd} aria-label="Add to cart">+</button>
         </div>
@@ -196,6 +255,8 @@ export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   const refreshCount = useCallback(() => {
     setCartCount(getCart().reduce((s, i) => s + i.qty, 0));
@@ -205,6 +266,22 @@ export default function HomePage() {
     refreshCount();
     return subscribe(refreshCount);
   }, [refreshCount]);
+
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_OUTSYDE_API_URL;
+    const bizId = process.env.NEXT_PUBLIC_OUTSYDE_BUSINESS_ID;
+    if (!apiUrl || !bizId) { setProductsLoading(false); return; }
+    fetch(`${apiUrl}/api/businesses/${bizId}/products`)
+      .then(r => r.json())
+      .then((data: unknown) => {
+        const raw = Array.isArray(data)
+          ? data
+          : (data as { products?: ApiProduct[] })?.products ?? [];
+        setProducts((raw as ApiProduct[]).map(mapApiProduct));
+      })
+      .catch(() => {})
+      .finally(() => setProductsLoading(false));
+  }, []);
 
   const groupHidden = (blendKey: string) =>
     ["morning", "midday", "night"].includes(activeFilter) && activeFilter !== blendKey;
@@ -340,25 +417,36 @@ export default function HomePage() {
             ))}
           </div>
 
-          {blendGroups.map((group) => {
-            const groupProducts = PRODUCTS.filter((p) => p.blend === group.key);
-            return (
-              <div key={group.key} style={{ marginBottom: "4rem", display: groupHidden(group.key) ? "none" : "block" }}>
-                <div className="blend-group-hdr">
-                  <span className={`time-badge ${group.badgeClass}`}>{group.badgeLabel}</span>
-                  <span className="blend-group-title">{group.title}</span>
-                  <span className="blend-group-sub">{group.sub}</span>
+          {productsLoading ? (
+            <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--lhb-text-muted)", fontFamily: "var(--font-body)", fontSize: ".85rem" }}>
+              Loading blends…
+            </div>
+          ) : products.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--lhb-text-muted)", fontFamily: "var(--font-body)", fontSize: ".85rem" }}>
+              No products available right now. Check back soon.
+            </div>
+          ) : (
+            blendGroups.map((group) => {
+              const groupProducts = products.filter((p) => p.blend === group.key);
+              if (groupProducts.length === 0) return null;
+              return (
+                <div key={group.key} style={{ marginBottom: "4rem", display: groupHidden(group.key) ? "none" : "block" }}>
+                  <div className="blend-group-hdr">
+                    <span className={`time-badge ${group.badgeClass}`}>{group.badgeLabel}</span>
+                    <span className="blend-group-title">{group.title}</span>
+                    <span className="blend-group-sub">{group.sub}</span>
+                  </div>
+                  <div className="product-grid">
+                    {groupProducts.map((p) => (
+                      <div key={p.id} style={{ display: cardHidden(p.type) ? "none" : "block" }}>
+                        <ProductCard product={p} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="product-grid">
-                  {groupProducts.map((p) => (
-                    <div key={p.id} style={{ display: cardHidden(p.type) ? "none" : "block" }}>
-                      <ProductCard product={p} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </section>
 
