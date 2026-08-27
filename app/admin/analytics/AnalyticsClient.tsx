@@ -148,7 +148,7 @@ function BarChart({ data }: { data: PeriodData[] }) {
   )
 }
 
-function exportCSV(yoy: YoYMonth[]) {
+function exportCSV(yoy: YoYMonth[], period: PeriodKey) {
   const header = 'Month,Revenue,Prior Year Revenue,YoY Delta %'
   const rows = yoy.map(r =>
     [r.label || r.month, (r.revenue_cents / 100).toFixed(2), (r.yoy_revenue_cents / 100).toFixed(2), r.yoy_delta?.toFixed(1) ?? ''].join(',')
@@ -158,7 +158,7 @@ function exportCSV(yoy: YoYMonth[]) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'lhb-analytics.csv'
+  a.download = `analytics-${period}-${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -171,7 +171,7 @@ export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyD
     : period === 'weekly' ? weeklyData
     : monthlyData
 
-  const handleExport = useCallback(() => exportCSV(yoy), [yoy])
+  const handleExport = useCallback(() => exportCSV(yoy, period), [yoy, period])
 
   const avgOrderCents = stats && stats.orderCount > 0
     ? Math.round(stats.monthlyRevenueCents / stats.orderCount)
@@ -185,7 +185,7 @@ export default function AnalyticsClient({ stats, dailyData, weeklyData, monthlyD
       <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2rem', fontWeight: 500, color: MOSS, margin: '0 0 4px' }}>Analytics</h1>
-          <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.78rem', color: 'rgba(30,48,32,0.5)', margin: 0 }}>Sales performance for Lotus House Blends</p>
+          <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.78rem', color: 'rgba(30,48,32,0.5)', margin: 0 }}>Sales performance overview</p>
         </div>
         {yoy.length > 0 && (
           <button
