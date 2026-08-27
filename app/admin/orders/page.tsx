@@ -26,17 +26,14 @@ export default async function AdminOrders() {
 
   try {
     const res = await fetch(
-      `${apiUrl}/api/business/orders?businessId=${businessId}`,
+      `${apiUrl}/api/business/orders${businessId ? `?businessId=${businessId}` : ''}`,
       {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       }
     );
     if (res.ok) {
-      const data: unknown = await res.json();
-      const raw: RawOrder[] = Array.isArray(data)
-        ? data
-        : ((data as { orders?: RawOrder[] }).orders ?? []);
+      const { orders: raw = [] } = await res.json() as { orders?: RawOrder[] };
 
       const newestId =
         raw.length > 0
