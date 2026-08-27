@@ -18,13 +18,13 @@ export interface OrderRow {
   isNewest?: boolean;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  paid:       'rgba(200,168,130,0.15)',
-  pending:    'rgba(200,168,130,0.15)',
-  processing: 'rgba(100,140,200,0.15)',
-  shipped:    'rgba(80,180,120,0.15)',
-  delivered:  'rgba(80,180,120,0.25)',
-  cancelled:  'rgba(200,80,80,0.15)',
+const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
+  pending:    { bg: 'rgba(212,137,10,0.12)',  text: '#9A6B0E' },
+  paid:       { bg: 'rgba(37,99,235,0.10)',   text: '#1D4ED8' },
+  processing: { bg: 'rgba(37,99,235,0.10)',   text: '#1D4ED8' },
+  shipped:    { bg: 'rgba(45,122,71,0.12)',   text: '#2D7A47' },
+  delivered:  { bg: 'rgba(107,114,128,0.12)', text: '#4B5563' },
+  cancelled:  { bg: 'rgba(192,57,43,0.10)',   text: '#C0392B' },
 };
 
 const UNFULFILLED = new Set(['paid', 'pending', 'processing']);
@@ -49,11 +49,19 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
     setFulfilling(null);
   }
 
-  const btnBase: React.CSSProperties = {
-    padding: '6px 16px', fontSize: '0.7rem', letterSpacing: '.1em',
-    textTransform: 'uppercase', border: '1px solid rgba(255,255,255,0.12)',
-    cursor: 'pointer', fontFamily: 'inherit',
-  };
+  const filterBtn = (active: boolean): React.CSSProperties => ({
+    padding: '7px 16px',
+    fontSize: '0.7rem',
+    letterSpacing: '.1em',
+    textTransform: 'uppercase',
+    border: '1px solid rgba(30,48,32,0.18)',
+    cursor: 'pointer',
+    fontFamily: 'Jost, sans-serif',
+    borderRadius: 3,
+    background: active ? '#1E3020' : 'transparent',
+    color: active ? '#F2EBD9' : 'rgba(30,48,32,0.5)',
+    transition: 'background 0.12s, color 0.12s',
+  });
 
   return (
     <>
@@ -62,20 +70,14 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
           .lhb-order-meta { grid-template-columns: 1fr !important; gap: 12px !important; }
         }
       `}</style>
+
       {/* Filter toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-        <button
-          onClick={() => setFilter('needs_shipping')}
-          style={{
-            ...btnBase,
-            background: filter === 'needs_shipping' ? '#1E3020' : 'transparent',
-            color: filter === 'needs_shipping' ? '#F2EBD9' : 'rgba(245,240,230,0.5)',
-          }}
-        >
+        <button onClick={() => setFilter('needs_shipping')} style={filterBtn(filter === 'needs_shipping')}>
           Needs Shipping
           {pendingCount > 0 && (
             <span style={{
-              marginLeft: 6, background: '#C8A882', color: '#1a1a18',
+              marginLeft: 6, background: '#B8831A', color: '#fff',
               borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem',
               fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -83,14 +85,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
             </span>
           )}
         </button>
-        <button
-          onClick={() => setFilter('all')}
-          style={{
-            ...btnBase,
-            background: filter === 'all' ? 'rgba(255,255,255,0.06)' : 'transparent',
-            color: filter === 'all' ? '#f5f0e6' : 'rgba(245,240,230,0.5)',
-          }}
-        >
+        <button onClick={() => setFilter('all')} style={filterBtn(filter === 'all')}>
           All Orders ({orders.length})
         </button>
       </div>
@@ -102,20 +97,24 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
           const trackUrl = order.tracking_number && order.carrier
             ? buildTrackingUrl(order.carrier as Carrier, order.tracking_number)
             : null;
+          const badge = STATUS_BADGE[order.status] ?? { bg: 'rgba(30,48,32,0.08)', text: 'rgba(30,48,32,0.6)' };
 
           return (
             <div key={order.id} style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: `1px solid ${order.isNewest ? 'rgba(200,168,130,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              padding: 24, position: 'relative',
+              background: '#fff',
+              border: `1px solid ${order.isNewest ? 'rgba(184,131,26,0.4)' : 'rgba(30,48,32,0.1)'}`,
+              borderRadius: 6,
+              padding: 24,
+              position: 'relative',
             }}>
               {/* NEW badge */}
               {order.isNewest && !isShipped && (
                 <span style={{
                   position: 'absolute', top: 12, right: 12,
-                  background: '#C8A882', color: '#1a1a18',
+                  background: '#B8831A', color: '#fff',
                   fontSize: '0.6rem', fontWeight: 700, letterSpacing: '.12em',
-                  padding: '3px 8px', textTransform: 'uppercase',
+                  padding: '3px 9px', textTransform: 'uppercase', borderRadius: 2,
+                  fontFamily: 'Jost, sans-serif',
                 }}>
                   NEW
                 </span>
@@ -124,22 +123,22 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div>
-                  <p style={{ fontSize: '0.65rem', letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 4 }}>
-                    Order ID
+                  <p style={{ fontSize: '0.6rem', letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 4, fontFamily: 'Jost, sans-serif' }}>
+                    Order
                   </p>
-                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.7)' }}>
                     #{String(order.order_number).padStart(4, '0')}
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontFamily: 'Georgia,serif', fontSize: '1.4rem', color: '#f5f0e6' }}>
+                  <span style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.4rem', fontWeight: 500, color: '#1E3020' }}>
                     ${(order.total_amount / 100).toFixed(2)}
                   </span>
                   <span style={{
-                    fontSize: '0.65rem', letterSpacing: '.1em', textTransform: 'uppercase',
-                    padding: '4px 12px',
-                    background: STATUS_COLORS[order.status] ?? 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)', color: '#f5f0e6',
+                    fontSize: '0.6rem', letterSpacing: '.1em', textTransform: 'uppercase',
+                    padding: '4px 10px', borderRadius: 2,
+                    background: badge.bg, color: badge.text,
+                    fontFamily: 'Jost, sans-serif',
                   }}>
                     {order.status}
                   </span>
@@ -147,14 +146,14 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
               </div>
 
               {/* Customer + shipping */}
-              <div className="lhb-order-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="lhb-order-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(30,48,32,0.08)' }}>
                 <div>
-                  <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Customer</p>
-                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(245,240,230,0.6)' }}>{order.customer_id.slice(0, 8).toUpperCase()}</p>
+                  <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Customer</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.6)' }}>{order.customer_id.slice(0, 8).toUpperCase()}</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Ship To</p>
-                  <p style={{ fontSize: '0.85rem', color: '#f5f0e6', lineHeight: 1.6 }}>
+                  <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Ship To</p>
+                  <p style={{ fontSize: '0.85rem', color: '#1E3020', lineHeight: 1.6, fontFamily: 'Jost, sans-serif' }}>
                     {order.shipping_address ?? '—'}
                   </p>
                 </div>
@@ -162,13 +161,13 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
 
               {/* Items */}
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 12 }}>Items</p>
+                <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 12, fontFamily: 'Jost, sans-serif' }}>Items</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {items.map((item: any, i: number) => (
+                  {items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#f5f0e6' }}>{item.name}</span>
-                      <span style={{ color: 'rgba(245,240,230,0.5)' }}>
-                        x{item.qty} — ${(item.price * item.qty).toFixed(2)}
+                      <span style={{ color: '#1E3020', fontFamily: 'Jost, sans-serif' }}>{item.name}</span>
+                      <span style={{ color: 'rgba(30,48,32,0.55)', fontFamily: 'Jost, sans-serif' }}>
+                        ×{item.qty} — ${(item.price * item.qty).toFixed(2)}
                       </span>
                     </div>
                   ))}
@@ -177,10 +176,10 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
 
               {/* Tracking info (when shipped) */}
               {isShipped && order.tracking_number && (
-                <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(80,180,120,0.06)', border: '1px solid rgba(80,180,120,0.15)' }}>
-                  <p style={{ fontSize: '0.65rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', marginBottom: 8 }}>Shipment</p>
-                  <p style={{ fontSize: '0.85rem', color: '#f5f0e6', marginBottom: 4 }}>
-                    <span style={{ color: 'rgba(245,240,230,0.5)' }}>{order.carrier}</span>
+                <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(45,122,71,0.06)', border: '1px solid rgba(45,122,71,0.18)', borderRadius: 4 }}>
+                  <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Shipment</p>
+                  <p style={{ fontSize: '0.85rem', color: '#1E3020', marginBottom: 4, fontFamily: 'Jost, sans-serif' }}>
+                    <span style={{ color: 'rgba(30,48,32,0.55)' }}>{order.carrier}</span>
                     {' '}
                     <span style={{ fontFamily: 'monospace' }}>{order.tracking_number}</span>
                   </p>
@@ -192,8 +191,9 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                       style={{
                         display: 'inline-block', marginTop: 6,
                         fontSize: '0.7rem', letterSpacing: '.1em', textTransform: 'uppercase',
-                        color: '#C8A882', textDecoration: 'none',
-                        borderBottom: '1px solid rgba(200,168,130,0.3)',
+                        color: '#B8831A', textDecoration: 'none',
+                        borderBottom: '1px solid rgba(184,131,26,0.3)',
+                        fontFamily: 'Jost, sans-serif',
                       }}
                     >
                       Track Package →
@@ -204,16 +204,17 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
 
               {/* Actions */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <p style={{ fontSize: '0.72rem', color: 'rgba(245,240,230,0.3)', margin: 0 }}>
+                <p style={{ fontSize: '0.72rem', color: 'rgba(30,48,32,0.35)', margin: 0, fontFamily: 'Jost, sans-serif' }}>
                   {new Date(order.created_at).toLocaleString()}
                 </p>
                 {!isShipped && (
                   <button
                     onClick={() => setFulfilling(order)}
                     style={{
-                      padding: '8px 18px', background: '#1E3020', color: '#F2EBD9',
-                      border: 'none', fontFamily: 'inherit', fontSize: '0.72rem',
-                      letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer',
+                      padding: '9px 22px', background: '#1E3020', color: '#F2EBD9',
+                      border: 'none', fontFamily: 'Jost, sans-serif', fontSize: '0.7rem',
+                      letterSpacing: '.14em', textTransform: 'uppercase', cursor: 'pointer',
+                      borderRadius: 2,
                     }}
                   >
                     Mark as Shipped
@@ -225,7 +226,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
         })}
 
         {displayed.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '64px 0', color: 'rgba(245,240,230,0.3)', fontSize: '0.9rem' }}>
+          <div style={{ textAlign: 'center', padding: '64px 0', color: 'rgba(30,48,32,0.38)', fontSize: '0.9rem', fontFamily: 'Jost, sans-serif' }}>
             {filter === 'needs_shipping' ? 'All orders have been shipped.' : 'No orders yet.'}
           </div>
         )}
@@ -234,7 +235,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
       {fulfilling && (
         <FulfillModal
           orderId={fulfilling.id}
-          customerName={fulfilling.customer_id.slice(0, 8).toUpperCase()}
+          customerName={`#${String(fulfilling.order_number).padStart(4, '0')}`}
           onClose={() => setFulfilling(null)}
           onShipped={(data) => handleShipped(fulfilling.id, data)}
         />

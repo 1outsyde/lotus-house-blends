@@ -78,15 +78,15 @@ export default async function AdminOrders() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Georgia,serif', fontSize: '2rem', fontWeight: 500, marginBottom: 8 }}>
+      <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.2rem', fontWeight: 500, color: '#1E3020', margin: '0 0 8px' }}>
         All Orders
       </h1>
-      <p style={{ color: 'rgba(245,240,230,0.5)', fontSize: '0.85rem', marginBottom: 32 }}>
+      <p style={{ color: 'rgba(30,48,32,0.5)', fontSize: '0.85rem', marginBottom: 32, fontFamily: 'Jost, sans-serif' }}>
         {fetchError ? '' : `${orders.length} total order${orders.length !== 1 ? 's' : ''}`}
       </p>
 
       {fetchError && (
-        <p style={{ color: '#fca5a5', fontSize: '0.85rem', marginBottom: 24 }}>{fetchError}</p>
+        <p style={{ color: '#C0392B', fontSize: '0.85rem', marginBottom: 24, fontFamily: 'Jost, sans-serif' }}>{fetchError}</p>
       )}
 
       {!fetchError && <OrdersClient initialOrders={orders} />}

@@ -16,7 +16,6 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-detect carrier as user types
   useEffect(() => {
     if (trackingNumber.trim()) {
       setCarrier(detectCarrier(trackingNumber));
@@ -39,7 +38,7 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
         },
         body: JSON.stringify({ trackingNumber: trackingNumber.trim(), carrier }),
       });
-      const data = await res.json() as any;
+      const data = await res.json() as { error?: string; order?: { tracking_url?: string | null } };
       if (!res.ok) throw new Error(data.error ?? 'Failed to update order');
       onShipped({ trackingNumber: trackingNumber.trim(), carrier, trackingUrl: data.order?.tracking_url ?? null });
     } catch (err) {
@@ -49,9 +48,26 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
   }
 
   const inputSt: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.15)', color: '#f5f0e6',
-    fontFamily: 'inherit', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
+    width: '100%',
+    padding: '10px 12px',
+    background: '#fff',
+    border: '1px solid rgba(30,48,32,0.2)',
+    color: '#1E3020',
+    fontFamily: 'Jost, sans-serif',
+    fontSize: '0.9rem',
+    outline: 'none',
+    boxSizing: 'border-box',
+    borderRadius: 2,
+  };
+
+  const labelSt: React.CSSProperties = {
+    display: 'block',
+    fontSize: '0.6rem',
+    letterSpacing: '.12em',
+    textTransform: 'uppercase',
+    color: 'rgba(30,48,32,0.5)',
+    marginBottom: 6,
+    fontFamily: 'Jost, sans-serif',
   };
 
   return (
@@ -60,26 +76,31 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
       aria-modal="true"
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.75)', display: 'flex',
-        alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        background: 'rgba(30,48,32,0.55)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background: '#111', border: '1px solid rgba(255,255,255,0.12)',
-        padding: '32px', width: '100%', maxWidth: 460,
+        background: '#F9F6EF',
+        border: '1px solid rgba(30,48,32,0.12)',
+        borderRadius: 8,
+        padding: '36px 32px',
+        width: '100%',
+        maxWidth: 460,
+        boxShadow: '0 8px 32px rgba(30,48,32,0.15)',
       }}>
-        <h2 style={{ fontFamily: 'Georgia,serif', fontSize: '1.3rem', fontWeight: 400, color: '#f5f0e6', margin: '0 0 6px' }}>
+        <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.4rem', fontWeight: 500, color: '#1E3020', margin: '0 0 6px' }}>
           Mark as Shipped
         </h2>
-        <p style={{ color: 'rgba(245,240,230,0.5)', fontSize: '0.8rem', margin: '0 0 24px' }}>
+        <p style={{ color: 'rgba(30,48,32,0.5)', fontSize: '0.82rem', margin: '0 0 28px', fontFamily: 'Jost, sans-serif' }}>
           {customerName}
         </p>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.65rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.5)', marginBottom: 6 }}>
-              Tracking Number <span style={{ color: '#c0392b' }}>*</span>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={labelSt}>
+              Tracking Number <span style={{ color: '#C0392B' }}>*</span>
             </label>
             <input
               type="text"
@@ -91,11 +112,11 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
             />
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.65rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.5)', marginBottom: 6 }}>
+          <div style={{ marginBottom: '1.75rem' }}>
+            <label style={labelSt}>
               Carrier
               {trackingNumber.trim() && carrier !== 'Other' && (
-                <span style={{ color: '#6aaa64', marginLeft: 8, fontStyle: 'italic', textTransform: 'none', letterSpacing: 0 }}>
+                <span style={{ color: '#2D7A47', marginLeft: 8, fontStyle: 'italic', textTransform: 'none', letterSpacing: 0, fontSize: '0.75rem' }}>
                   auto-detected
                 </span>
               )}
@@ -103,16 +124,16 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
             <select
               value={carrier}
               onChange={(e) => setCarrier(e.target.value as Carrier)}
-              style={{ ...inputSt, cursor: 'pointer' }}
+              style={{ ...inputSt, cursor: 'pointer', background: '#fff' }}
             >
               {CARRIER_LIST.map(c => (
-                <option key={c} value={c} style={{ background: '#111' }}>{c}</option>
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>
 
           {error && (
-            <p style={{ color: '#c0392b', fontSize: '0.8rem', marginBottom: '1rem' }}>{error}</p>
+            <p style={{ color: '#C0392B', fontSize: '0.82rem', marginBottom: '1rem', fontFamily: 'Jost, sans-serif' }}>{error}</p>
           )}
 
           <div style={{ display: 'flex', gap: 12 }}>
@@ -120,10 +141,10 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
               type="submit"
               disabled={loading || !trackingNumber.trim()}
               style={{
-                flex: 1, padding: '10px', background: loading ? '#2a4a2c' : '#1E3020',
-                color: '#F2EBD9', border: 'none', fontFamily: 'inherit',
-                fontSize: '0.75rem', letterSpacing: '.14em', textTransform: 'uppercase',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                flex: 1, padding: '10px', background: loading ? 'rgba(30,48,32,0.6)' : '#1E3020',
+                color: '#F2EBD9', border: 'none', fontFamily: 'Jost, sans-serif',
+                fontSize: '0.72rem', letterSpacing: '.14em', textTransform: 'uppercase',
+                cursor: loading ? 'not-allowed' : 'pointer', borderRadius: 2,
               }}
             >
               {loading ? 'Saving…' : 'Confirm Shipment'}
@@ -133,9 +154,9 @@ export default function FulfillModal({ orderId, customerName, onClose, onShipped
               onClick={onClose}
               style={{
                 padding: '10px 20px', background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(245,240,230,0.6)',
-                fontFamily: 'inherit', fontSize: '0.75rem', letterSpacing: '.14em',
-                textTransform: 'uppercase', cursor: 'pointer',
+                border: '1px solid rgba(30,48,32,0.2)', color: 'rgba(30,48,32,0.6)',
+                fontFamily: 'Jost, sans-serif', fontSize: '0.72rem', letterSpacing: '.14em',
+                textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
               }}
             >
               Cancel
