@@ -57,6 +57,7 @@ export async function PATCH(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'x-business-id': process.env.OUTSYDE_BUSINESS_ID ?? '',
       },
       body: JSON.stringify({ trackingNumber, carrier: resolvedCarrier, status: 'shipped' }),
     });

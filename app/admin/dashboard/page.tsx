@@ -45,7 +45,10 @@ export default async function AdminDashboard() {
     const res = await fetch(
       `${apiUrl}/api/business/orders${businessId ? `?businessId=${businessId}` : ''}`,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-business-id': process.env.OUTSYDE_BUSINESS_ID ?? '',
+        },
         cache: 'no-store',
       }
     );
