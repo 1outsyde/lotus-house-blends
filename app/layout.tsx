@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(LHB_CONFIG.siteUrl),
   title: LHB_CONFIG.siteName,
   description: 'Handcrafted herbal aromatherapy blends crafted for every ritual of your day — morning, midday, and night.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
+    other: [{ rel: 'icon', type: 'image/png', sizes: '32x32', url: '/favicon-32x32.png' }],
+  },
   openGraph: {
     url: LHB_CONFIG.siteUrl,
     siteName: LHB_CONFIG.siteName,
