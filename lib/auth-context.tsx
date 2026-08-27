@@ -52,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await outsydeClient.post<{ user: User; accessToken?: string }>('/auth/mobile/login', { email, password })
     if (data.accessToken && typeof window !== 'undefined') {
       localStorage.setItem('outsyde_access_token', data.accessToken)
+      document.cookie = `outsyde_access_token=${data.accessToken}; path=/; SameSite=Lax`
     }
     setUser(data.user)
     return data.user
@@ -77,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await outsydeClient.post('/auth/logout')
     if (typeof window !== 'undefined') {
       localStorage.removeItem('outsyde_access_token')
+      document.cookie = 'outsyde_access_token=; path=/; max-age=0'
     }
     setUser(null)
   }
