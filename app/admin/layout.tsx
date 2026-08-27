@@ -1,5 +1,6 @@
 'use client'
 import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { isAdminEmail } from '@/lib/auth-utils'
@@ -10,7 +11,7 @@ function timeGreeting(firstName: string): string {
   return `Good ${tod}, ${firstName}.`
 }
 
-export default function AdminLayout({ children }: { children: unknown }) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
 
