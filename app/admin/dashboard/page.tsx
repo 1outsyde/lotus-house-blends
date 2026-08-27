@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
-import Link from 'next/link';
 import DashboardCalendar from './DashboardCalendar';
+import UpNextCard from './UpNextCard';
 
 interface Order {
   id: string;
@@ -65,17 +65,29 @@ export default async function AdminDashboard() {
     .reduce((sum, o) => sum + (o.total_amount ?? 0), 0);
   const avgOrderValueCents = totalOrders > 0 ? Math.round(totalRevenueCents / totalOrders) : 0;
 
-  const upNext = [...orders]
+  const upNextRaw = [...orders]
     .filter((o) => o.status === 'paid')
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] ?? null;
 
-  // Build date → statuses map for calendar
-  const dateMap: Record<string, string[]> = {};
+  const upNext = upNextRaw ? {
+    id: upNextRaw.id,
+    orderNumber: upNextRaw.order_number,
+    shippingAddress: upNextRaw.shipping_address ?? '—',
+    itemsSummary: itemsSummary(upNextRaw.items),
+    totalAmount: upNextRaw.total_amount,
+  } : null;
+
+  // Richer date map: each key → array of { status, orderNumber, amount }
+  const dateMap: Record<string, Array<{ status: string; orderNumber: number; amount: number }>> = {};
   for (const order of orders) {
     if (!order.created_at) continue;
     const key = toDateKey(order.created_at);
     if (!dateMap[key]) dateMap[key] = [];
-    dateMap[key].push(order.status);
+    dateMap[key].push({
+      status: order.status,
+      orderNumber: order.order_number,
+      amount: order.total_amount,
+    });
   }
 
   const statCards = [
@@ -108,40 +120,16 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      {/* Calendar */}
-      <DashboardCalendar dateMap={dateMap} />
-
       {/* Up Next */}
-      <div>
+      <div style={{ marginBottom: 36 }}>
         <h2 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.5rem', fontWeight: 500, color: '#1E3020', margin: '0 0 16px' }}>
           Up Next
         </h2>
-
-        {upNext ? (
-          <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px' }}>
-            <p style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'rgba(30,48,32,0.5)', marginBottom: 8 }}>
-              #{String(upNext.order_number).padStart(4, '0')}
-            </p>
-            <p style={{ fontSize: '0.95rem', color: '#1E3020', fontFamily: 'Jost, sans-serif', marginBottom: 4 }}>
-              {upNext.shipping_address ?? '—'}
-            </p>
-            <p style={{ fontSize: '0.82rem', color: 'rgba(30,48,32,0.58)', fontFamily: 'Jost, sans-serif', marginBottom: 12 }}>
-              {itemsSummary(upNext.items)}
-            </p>
-            <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.25rem', fontWeight: 500, color: '#1E3020', marginBottom: 20 }}>
-              {fmt(upNext.total_amount)}
-            </p>
-            <Link
-              href="/admin/orders"
-              style={{ fontSize: '0.65rem', letterSpacing: '.15em', textTransform: 'uppercase', color: '#1E3020', textDecoration: 'none', fontFamily: 'Jost, sans-serif', borderBottom: '1px solid rgba(30,48,32,0.28)', paddingBottom: 2 }}
-            >
-              Go to Orders →
-            </Link>
-          </div>
-        ) : (
-          <p style={{ color: 'rgba(30,48,32,0.48)', fontSize: '0.9rem', fontFamily: 'Jost, sans-serif' }}>All caught up.</p>
-        )}
+        <UpNextCard order={upNext} />
       </div>
+
+      {/* Calendar */}
+      <DashboardCalendar dateMap={dateMap} />
     </div>
   );
 }

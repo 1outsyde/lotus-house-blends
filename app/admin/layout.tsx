@@ -1,9 +1,14 @@
 'use client'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { isAdminEmail } from '@/lib/auth-utils'
+
+const VENDOR_CONFIG = {
+  hasBookings: false,
+  vendorName: 'Lotus House Blends',
+} as const
 
 function timeGreeting(firstName: string): string {
   const h = new Date().getHours()
@@ -14,6 +19,7 @@ function timeGreeting(firstName: string): string {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -27,7 +33,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', background: '#F2EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'rgba(30,48,32,0.4)', fontSize: '0.85rem', letterSpacing: '.1em', fontFamily: 'sans-serif' }}>Loading…</p>
+        <p style={{ color: 'rgba(30,48,32,0.4)', fontSize: '0.85rem', letterSpacing: '.1em', fontFamily: 'Jost, sans-serif' }}>Loading…</p>
       </div>
     )
   }
@@ -38,6 +44,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     await logout()
     router.push('/login')
   }
+
+  const navItems = [
+    { href: '/admin/dashboard', label: 'Dashboard' },
+    { href: '/admin/orders', label: 'Orders' },
+    ...(VENDOR_CONFIG.hasBookings ? [{ href: '/admin/bookings', label: 'Bookings', disabled: false }] : []),
+    { href: '/admin/analytics', label: 'Analytics', disabled: true },
+    { href: '/admin/products', label: 'Products', disabled: true },
+    { href: '/admin/subscription', label: 'Subscription', disabled: true },
+  ]
 
   return (
     <div className="lhb-layout" style={{ display: 'flex', minHeight: '100vh' }}>
@@ -57,7 +72,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           transition: background 0.15s, color 0.15s;
           font-family: 'Jost', sans-serif;
         }
-        .lhb-nav-link:hover { background: rgba(255,255,255,0.09); color: #F2EBD9; }
+        .lhb-nav-link:hover:not(.lhb-nav-disabled) { background: rgba(255,255,255,0.09); color: #F2EBD9; }
+        .lhb-nav-link.lhb-nav-active { background: rgba(184,131,26,0.2); color: #B8831A; }
+        .lhb-nav-disabled { opacity: 0.3; cursor: default; pointer-events: none; }
         @media (max-width: 640px) {
           .lhb-layout { flex-direction: column !important; }
           .lhb-sidebar { width: 100% !important; height: auto !important; position: static !important; flex-direction: row !important; align-items: center !important; padding: 12px 16px !important; }
@@ -83,17 +100,28 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         {/* Brand */}
         <div className="lhb-sidebar-top" style={{ marginBottom: 44, paddingLeft: 6 }}>
           <p style={{ fontSize: '0.55rem', letterSpacing: '.24em', textTransform: 'uppercase', color: 'rgba(242,235,217,0.38)', marginBottom: 3, fontFamily: 'Jost, sans-serif' }}>
-            Lotus House
+            {VENDOR_CONFIG.vendorName}
           </p>
           <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.2rem', fontWeight: 500, color: '#F2EBD9', letterSpacing: '.04em', margin: 0 }}>
             Admin
           </p>
         </div>
 
-        {/* Nav links */}
+        {/* Nav */}
         <nav className="lhb-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-          <a href="/admin/dashboard" className="lhb-nav-link">Dashboard</a>
-          <a href="/admin/orders" className="lhb-nav-link">Orders</a>
+          {navItems.map(({ href, label, disabled }) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/')
+            const cls = [
+              'lhb-nav-link',
+              isActive ? 'lhb-nav-active' : '',
+              disabled ? 'lhb-nav-disabled' : '',
+            ].filter(Boolean).join(' ')
+            return (
+              <a key={href} href={disabled ? undefined : href} className={cls}>
+                {label}
+              </a>
+            )
+          })}
         </nav>
 
         {/* Sign out */}
@@ -126,7 +154,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         overflowY: 'auto',
         minHeight: '100vh',
       }}>
-        <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.8rem', color: 'rgba(30,48,32,0.48)', marginBottom: 28, letterSpacing: '.03em', margin: '0 0 28px' }}>
+        <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.8rem', color: 'rgba(30,48,32,0.48)', letterSpacing: '.03em', margin: '0 0 28px' }}>
           {timeGreeting(user.firstName)}
         </p>
         {children}
