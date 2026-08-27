@@ -127,7 +127,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                     Order
                   </p>
                   <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.7)' }}>
-                    #{String(order.order_number).padStart(4, '0')}
+                    #{String(order.order_number ?? 0).padStart(4, '0')}
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -149,7 +149,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
               <div className="lhb-order-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(30,48,32,0.08)' }}>
                 <div>
                   <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Customer</p>
-                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.6)' }}>{order.customer_id.slice(0, 8).toUpperCase()}</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'rgba(30,48,32,0.6)' }}>{(order.customer_id ?? '').slice(0, 8).toUpperCase()}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.6rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.42)', marginBottom: 8, fontFamily: 'Jost, sans-serif' }}>Ship To</p>
@@ -235,7 +235,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
       {fulfilling && (
         <FulfillModal
           orderId={fulfilling.id}
-          customerName={`#${String(fulfilling.order_number).padStart(4, '0')}`}
+          customerName={`#${String(fulfilling.order_number ?? 0).padStart(4, '0')}`}
           onClose={() => setFulfilling(null)}
           onShipped={(data) => handleShipped(fulfilling.id, data)}
         />
