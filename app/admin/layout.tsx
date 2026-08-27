@@ -1,13 +1,18 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { isAdminEmail } from '@/lib/auth-utils'
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function timeGreeting(firstName: string): string {
+  const h = new Date().getHours()
+  const tod = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
+  return `Good ${tod}, ${firstName}.`
+}
+
+export default function AdminLayout({ children }: { children: unknown }) {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
-  const [sidebarReady, setSidebarReady] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -16,13 +21,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!isLoading && user && user.role !== 'vendor' && user.role !== 'admin' && !isAdminEmail(user.email)) {
       router.replace('/')
     }
-    if (!isLoading && user) setSidebarReady(true)
   }, [user, isLoading, router])
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'rgba(245,240,230,0.4)', fontSize: '0.85rem', letterSpacing: '.1em' }}>Loading...</p>
+      <div style={{ minHeight: '100vh', background: '#F2EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'rgba(30,48,32,0.4)', fontSize: '0.85rem', letterSpacing: '.1em', fontFamily: 'sans-serif' }}>Loading…</p>
       </div>
     )
   }
@@ -35,36 +39,95 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e6', opacity: sidebarReady ? 1 : 0, transition: 'opacity 0.15s' }}>
+    <div className="lhb-layout" style={{ display: 'flex', minHeight: '100vh' }}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500&display=swap');
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        .lhb-nav-link {
+          color: rgba(242,235,217,0.65);
+          text-decoration: none;
+          display: block;
+          padding: 9px 14px;
+          font-size: 0.7rem;
+          letter-spacing: .16em;
+          text-transform: uppercase;
+          border-radius: 4px;
+          transition: background 0.15s, color 0.15s;
+          font-family: 'Jost', sans-serif;
+        }
+        .lhb-nav-link:hover { background: rgba(255,255,255,0.09); color: #F2EBD9; }
         @media (max-width: 640px) {
-          .lhb-admin-nav { padding: 12px 16px !important; flex-wrap: wrap; height: auto !important; gap: 8px; }
-          .lhb-admin-nav-links { gap: 12px !important; flex-wrap: wrap; }
-          .lhb-admin-main { padding: 24px 16px !important; }
+          .lhb-layout { flex-direction: column !important; }
+          .lhb-sidebar { width: 100% !important; height: auto !important; position: static !important; flex-direction: row !important; align-items: center !important; padding: 12px 16px !important; }
+          .lhb-sidebar-top { margin-bottom: 0 !important; }
+          .lhb-sidebar-nav { flex-direction: row !important; gap: 4px !important; flex: 1; margin: 0 12px; }
+          .lhb-main { padding: 20px 16px !important; }
         }
       `}</style>
-      <nav className="lhb-admin-nav" style={{
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        padding: '16px 32px',
+
+      {/* Sidebar */}
+      <aside className="lhb-sidebar" style={{
+        width: 220,
+        background: '#1E3020',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        padding: '32px 14px 24px',
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto',
       }}>
-        <span style={{ fontFamily: 'Georgia, serif', fontSize: '1.2rem', letterSpacing: '.1em' }}>
-          LOTUS HOUSE — ADMIN
-        </span>
-        <div className="lhb-admin-nav-links" style={{ display: 'flex', gap: 24, fontSize: '0.75rem', letterSpacing: '.12em', textTransform: 'uppercase' }}>
-          <a href="/admin/dashboard" style={{ color: '#f5f0e6', textDecoration: 'none' }}>Dashboard</a>
-          <a href="/admin/orders" style={{ color: '#f5f0e6', textDecoration: 'none' }}>Orders</a>
-          <button
-            onClick={handleLogout}
-            style={{ background: 'none', border: 'none', color: 'rgba(245,240,230,0.5)', cursor: 'pointer', fontSize: '0.75rem', letterSpacing: '.12em', textTransform: 'uppercase', padding: 0 }}
-          >
-            Sign Out
-          </button>
+        {/* Brand */}
+        <div className="lhb-sidebar-top" style={{ marginBottom: 44, paddingLeft: 6 }}>
+          <p style={{ fontSize: '0.55rem', letterSpacing: '.24em', textTransform: 'uppercase', color: 'rgba(242,235,217,0.38)', marginBottom: 3, fontFamily: 'Jost, sans-serif' }}>
+            Lotus House
+          </p>
+          <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.2rem', fontWeight: 500, color: '#F2EBD9', letterSpacing: '.04em', margin: 0 }}>
+            Admin
+          </p>
         </div>
-      </nav>
-      <main className="lhb-admin-main" style={{ padding: '40px 32px' }}>
+
+        {/* Nav links */}
+        <nav className="lhb-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+          <a href="/admin/dashboard" className="lhb-nav-link">Dashboard</a>
+          <a href="/admin/orders" className="lhb-nav-link">Orders</a>
+        </nav>
+
+        {/* Sign out */}
+        <button
+          onClick={handleLogout}
+          style={{
+            background: 'none',
+            border: '1px solid rgba(242,235,217,0.14)',
+            color: 'rgba(242,235,217,0.45)',
+            cursor: 'pointer',
+            fontSize: '0.62rem',
+            letterSpacing: '.16em',
+            textTransform: 'uppercase',
+            padding: '9px 14px',
+            fontFamily: 'Jost, sans-serif',
+            textAlign: 'left',
+            borderRadius: 4,
+            marginTop: 12,
+          }}
+        >
+          Sign Out
+        </button>
+      </aside>
+
+      {/* Content */}
+      <main className="lhb-main" style={{
+        flex: 1,
+        background: '#F2EBD9',
+        padding: '40px 44px',
+        overflowY: 'auto',
+        minHeight: '100vh',
+      }}>
+        <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.8rem', color: 'rgba(30,48,32,0.48)', marginBottom: 28, letterSpacing: '.03em', margin: '0 0 28px' }}>
+          {timeGreeting(user.firstName)}
+        </p>
         {children}
       </main>
     </div>
