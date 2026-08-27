@@ -43,7 +43,7 @@ export default async function AdminDashboard() {
   try {
     const businessId = process.env.NEXT_PUBLIC_OUTSYDE_BUSINESS_ID;
     const res = await fetch(
-      `${apiUrl}/api/business/orders${businessId ? `?businessId=${businessId}` : ''}`,
+      `${apiUrl}/api/business/orders${businessId ? `?businessId=${businessId}&format=snake` : '?format=snake'}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
