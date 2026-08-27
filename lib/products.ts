@@ -1,3 +1,5 @@
+// DEPRECATED — storefront now fetches live from outsyde-backend.
+// Do not remove until live fetch is verified working in production.
 export type ProductType = "prerolls" | "herbs" | "tea";
 export type BlendType = "morning" | "midday" | "night";
 
