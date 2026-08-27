@@ -41,8 +41,9 @@ export default async function AdminDashboard() {
   let fetchError = '';
 
   try {
+    const businessId = process.env.NEXT_PUBLIC_OUTSYDE_BUSINESS_ID;
     const res = await fetch(
-      `${apiUrl}/api/business/orders`,
+      `${apiUrl}/api/business/orders${businessId ? `?businessId=${businessId}` : ''}`,
       {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
