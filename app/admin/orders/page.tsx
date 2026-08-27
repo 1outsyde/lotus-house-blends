@@ -26,7 +26,7 @@ export default async function AdminOrders() {
 
   try {
     const res = await fetch(
-      `${apiUrl}/api/business/orders${businessId ? `?businessId=${businessId}` : ''}`,
+      `${apiUrl}/api/business/orders?businessId=${businessId}&format=snake`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
