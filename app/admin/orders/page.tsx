@@ -1,62 +1,80 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { cookies } from 'next/headers';
 import OrdersClient, { type OrderRow } from './OrdersClient';
 
-function getToken(): string | null {
-  return typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null;
+interface RawOrder {
+  id: string;
+  order_number: number;
+  customer_id: string;
+  items: Array<{ name: string; qty: number; price: number }> | string;
+  total_amount: number;
+  status: string;
+  shipping_address: string | null;
+  created_at: string;
+  tracking_number: string | null;
+  carrier: string | null;
 }
 
-export default function AdminOrders() {
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+export default async function AdminOrders() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('outsyde_access_token')?.value ?? '';
 
-  useEffect(() => {
-    const token = getToken();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+  const apiUrl = process.env.OUTSYDE_API_URL;
+  const businessId = process.env.NEXT_PUBLIC_OUTSYDE_BUSINESS_ID;
 
-    fetch('/api/admin/orders', { headers })
-      .then(r => r.json())
-      .then((data) => {
-        if (!Array.isArray(data.orders)) {
-          setError('Failed to load orders.');
-          return;
-        }
+  let orders: OrderRow[] = [];
+  let fetchError = '';
 
-        // Sort: unfulfilled first, then by newest
-        const sorted = [...data.orders].sort((a: any, b: any) => {
-          const aUnfulfilled = !['shipped', 'delivered'].includes(a.status) ? 0 : 1;
-          const bUnfulfilled = !['shipped', 'delivered'].includes(b.status) ? 0 : 1;
-          if (aUnfulfilled !== bUnfulfilled) return aUnfulfilled - bUnfulfilled;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
+  try {
+    const res = await fetch(
+      `${apiUrl}/api/business/orders?businessId=${businessId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      }
+    );
+    if (res.ok) {
+      const data: unknown = await res.json();
+      const raw: RawOrder[] = Array.isArray(data)
+        ? data
+        : ((data as { orders?: RawOrder[] }).orders ?? []);
 
-        // Mark the most recently placed order
-        const newestId = data.orders.length > 0
-          ? [...data.orders].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.id
+      const newestId =
+        raw.length > 0
+          ? [...raw].sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0].id
           : null;
 
-        const mapped: OrderRow[] = sorted.map((r: any) => ({
-          id: r.id,
-          order_number: r.orderNumber,
-          customer_id: r.customerId,
-          items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items ?? []),
-          total_amount: r.totalAmount,
-          status: r.status ?? 'pending',
-          shipping_address: r.shippingAddress ?? null,
-          created_at: r.createdAt,
-          tracking_number: r.trackingNumber ?? null,
-          carrier: r.carrier ?? null,
-          isNewest: r.id === newestId,
-        }));
+      // paid orders first (ASC by date), then all others (DESC by date)
+      const sorted = [...raw].sort((a, b) => {
+        const aPaid = a.status === 'paid' ? 0 : 1;
+        const bPaid = b.status === 'paid' ? 0 : 1;
+        if (aPaid !== bPaid) return aPaid - bPaid;
+        if (aPaid === 0) {
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
-        setOrders(mapped);
-      })
-      .catch(() => setError('Failed to load orders.'))
-      .finally(() => setLoading(false));
-  }, []);
+      orders = sorted.map((r) => ({
+        id: r.id,
+        order_number: r.order_number,
+        customer_id: r.customer_id,
+        items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items ?? []),
+        total_amount: r.total_amount,
+        status: r.status ?? 'pending',
+        shipping_address: r.shipping_address ?? null,
+        created_at: r.created_at,
+        tracking_number: r.tracking_number ?? null,
+        carrier: r.carrier ?? null,
+        isNewest: r.id === newestId,
+      }));
+    } else {
+      fetchError = `Failed to load orders (${res.status}).`;
+    }
+  } catch {
+    fetchError = 'Could not reach data service.';
+  }
 
   return (
     <div>
@@ -64,14 +82,14 @@ export default function AdminOrders() {
         All Orders
       </h1>
       <p style={{ color: 'rgba(245,240,230,0.5)', fontSize: '0.85rem', marginBottom: 32 }}>
-        {loading ? 'Loading…' : `${orders.length} total order${orders.length !== 1 ? 's' : ''}`}
+        {fetchError ? '' : `${orders.length} total order${orders.length !== 1 ? 's' : ''}`}
       </p>
 
-      {error && (
-        <p style={{ color: '#fca5a5', fontSize: '0.85rem', marginBottom: 24 }}>{error}</p>
+      {fetchError && (
+        <p style={{ color: '#fca5a5', fontSize: '0.85rem', marginBottom: 24 }}>{fetchError}</p>
       )}
 
-      {!loading && !error && <OrdersClient initialOrders={orders} />}
+      {!fetchError && <OrdersClient initialOrders={orders} />}
     </div>
   );
 }
