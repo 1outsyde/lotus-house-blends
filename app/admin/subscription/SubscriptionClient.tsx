@@ -83,7 +83,7 @@ export default function SubscriptionClient({ subscription: subProp, tiers }: Pro
   }, [sub])
 
   const activeTiers = [...tiers]
-    .filter(t => t.isActive)
+    .filter(t => t.isActive && t.name !== 'grandfathered')
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
   const heading: { fontFamily: string; color: string; fontWeight: number; margin: number } = {
@@ -167,6 +167,31 @@ export default function SubscriptionClient({ subscription: subProp, tiers }: Pro
           </div>
         )}
       </section>
+
+      {/* Manage Plan CTA */}
+      <div style={{ marginBottom: 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+        <button
+          onClick={() => window.open('https://www.goutsyde.com/subscription/manage', '_blank')}
+          style={{
+            background: MOSS,
+            color: GOLD,
+            border: 'none',
+            borderRadius: 8,
+            padding: '12px 24px',
+            fontSize: '0.75rem',
+            letterSpacing: '.12em',
+            textTransform: 'uppercase',
+            fontFamily: 'Jost, sans-serif',
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          Manage Plan
+        </button>
+        <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(30,48,32,0.45)', letterSpacing: '.02em' }}>
+          Upgrade, downgrade, or cancel your plan
+        </p>
+      </div>
 
       {/* Tier comparison */}
       {activeTiers.length > 0 && (
