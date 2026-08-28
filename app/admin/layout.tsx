@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     ...(VENDOR_CONFIG.hasBookings ? [{ href: '/admin/bookings', label: 'Bookings', disabled: false }] : []),
     { href: '/admin/analytics', label: 'Analytics' },
     { href: '/admin/products', label: 'Products' },
-    { href: '/admin/subscription', label: 'Subscription', disabled: true },
+    { href: '/admin/subscription', label: 'Subscription' },
   ]
 
   return (
