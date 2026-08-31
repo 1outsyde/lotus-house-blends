@@ -257,6 +257,7 @@ export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [storeClosed, setStoreClosed] = useState(false);
 
   const refreshCount = useCallback(() => {
     setCartCount(getCart().reduce((s, i) => s + i.qty, 0));
@@ -272,8 +273,12 @@ export default function HomePage() {
     const bizId = process.env.NEXT_PUBLIC_OUTSYDE_BUSINESS_ID;
     if (!apiUrl || !bizId) { setProductsLoading(false); return; }
     fetch(`${apiUrl}/api/businesses/${bizId}/products`)
-      .then(r => r.json())
-      .then((data: unknown) => {
+      .then(async (r) => {
+        if (!r.ok) {
+          setStoreClosed(true);
+          return;
+        }
+        const data: unknown = await r.json();
         const raw = Array.isArray(data)
           ? data
           : (data as { products?: ApiProduct[] })?.products ?? [];
@@ -420,6 +425,18 @@ export default function HomePage() {
           {productsLoading ? (
             <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--lhb-text-muted)", fontFamily: "var(--font-body)", fontSize: ".85rem" }}>
               Loading blends…
+            </div>
+          ) : storeClosed ? (
+            <div style={{ textAlign: "center", padding: "5rem 2rem", background: "var(--lhb-parchment-dark)", borderRadius: 4 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.8rem, 4vw, 2.6rem)", fontWeight: 400, color: "var(--lhb-moss)", marginBottom: "1rem" }}>
+                Temporarily Closed
+              </div>
+              <p style={{ fontFamily: "var(--font-body)", fontSize: ".95rem", color: "var(--lhb-text-mid)", lineHeight: 1.7, maxWidth: 480, margin: "0 auto 2rem" }}>
+                Our shop is temporarily unavailable. We&apos;ll be back soon with your favourite blends — thank you for your patience.
+              </p>
+              <a href="mailto:info@goutsyde.com" style={{ display: "inline-block", padding: ".75rem 1.75rem", border: "1px solid var(--lhb-moss)", color: "var(--lhb-moss)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".75rem", letterSpacing: ".12em", textTransform: "uppercase", borderRadius: "2px" }}>
+                Contact Us
+              </a>
             </div>
           ) : products.length === 0 ? (
             <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--lhb-text-muted)", fontFamily: "var(--font-body)", fontSize: ".85rem" }}>
