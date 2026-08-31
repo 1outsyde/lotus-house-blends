@@ -274,8 +274,11 @@ export default function HomePage() {
     if (!apiUrl || !bizId) { setProductsLoading(false); return; }
     fetch(`${apiUrl}/api/businesses/${bizId}/products`)
       .then(async (r) => {
-        if (!r.ok) {
+        if (r.status === 402 || r.status === 404) {
           setStoreClosed(true);
+          return;
+        }
+        if (!r.ok) {
           return;
         }
         const data: unknown = await r.json();
