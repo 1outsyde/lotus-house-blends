@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -28,11 +29,15 @@ export default function RegisterPage() {
       setError('Password must be at least 8 characters')
       return
     }
+    if (!agreed) {
+      setError('Please agree to the terms to continue')
+      return
+    }
 
     setLoading(true)
     try {
       await register({ email, password, firstName, lastName })
-      router.push('/')
+      router.push('/account')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.'
       setError(message)
@@ -43,13 +48,15 @@ export default function RegisterPage() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(30,48,32,0.06)',
+    border: '1px solid rgba(30,48,32,0.2)',
     padding: '12px 14px',
-    color: '#f5f0e6',
+    color: '#1E3020',
     fontSize: '0.95rem',
     outline: 'none',
     boxSizing: 'border-box',
+    borderRadius: '4px',
+    fontFamily: 'Jost, sans-serif',
   }
 
   const labelStyle: React.CSSProperties = {
@@ -57,26 +64,27 @@ export default function RegisterPage() {
     fontSize: '0.65rem',
     letterSpacing: '.16em',
     textTransform: 'uppercase',
-    color: 'rgba(245,240,230,0.4)',
+    color: 'rgba(30,48,32,0.55)',
     marginBottom: 8,
+    fontFamily: 'Jost, sans-serif',
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f0e6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px' }}>
+    <div style={{ minHeight: '100vh', background: '#F2EBD9', color: '#1E3020', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px' }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
 
-        <p style={{ fontSize: '0.7rem', letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(245,240,230,0.4)', textAlign: 'center', marginBottom: 12 }}>
+        <p style={{ fontSize: '0.7rem', letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.45)', textAlign: 'center', marginBottom: 12, fontFamily: 'Jost, sans-serif' }}>
           Lotus House Blends
         </p>
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '2.2rem', fontWeight: 500, textAlign: 'center', marginBottom: 6 }}>
+        <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.4rem', fontWeight: 500, textAlign: 'center', marginBottom: 6, color: '#1E3020' }}>
           Create Account
         </h1>
-        <p style={{ textAlign: 'center', color: 'rgba(245,240,230,0.4)', fontSize: '0.85rem', marginBottom: 36 }}>
+        <p style={{ textAlign: 'center', color: 'rgba(30,48,32,0.5)', fontSize: '0.85rem', marginBottom: 36, fontFamily: 'Jost, sans-serif' }}>
           Join Lotus House Blends
         </p>
 
         {error && (
-          <div style={{ marginBottom: 20, padding: '12px 16px', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.05)', color: '#fca5a5', fontSize: '0.85rem' }}>
+          <div style={{ marginBottom: 20, padding: '12px 16px', border: '1px solid rgba(180,60,60,0.3)', background: 'rgba(180,60,60,0.06)', color: '#8b3030', fontSize: '0.85rem', borderRadius: '4px', fontFamily: 'Jost, sans-serif' }}>
             {error}
           </div>
         )}
@@ -144,18 +152,50 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Outsyde disclosure — required */}
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontFamily: 'Jost, sans-serif' }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={e => setAgreed(e.target.checked)}
+              required
+              style={{ marginTop: 3, accentColor: '#1E3020', flexShrink: 0 }}
+            />
+            <span style={{ fontSize: '0.78rem', color: 'rgba(30,48,32,0.6)', lineHeight: 1.5 }}>
+              I understand that this site is powered by{' '}
+              <a href="https://goutsyde.com" target="_blank" rel="noopener noreferrer" style={{ color: '#B8831A', textDecoration: 'underline' }}>
+                Outsyde
+              </a>
+              , a commerce platform for independent wellness brands, and that my account and order data are managed by Outsyde on behalf of Lotus House Blends.
+            </span>
+          </label>
+
           <button
             type="submit"
             disabled={loading}
-            style={{ marginTop: 8, background: '#f5f0e6', color: '#0a0a0a', border: 'none', padding: '14px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
+            style={{
+              marginTop: 8,
+              background: '#1E3020',
+              color: '#F2EBD9',
+              border: 'none',
+              padding: '14px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              letterSpacing: '.16em',
+              textTransform: 'uppercase',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              borderRadius: '4px',
+              fontFamily: 'Jost, sans-serif',
+            }}
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', fontSize: '0.82rem', color: 'rgba(245,240,230,0.4)', marginTop: 24 }}>
+        <p style={{ textAlign: 'center', fontSize: '0.82rem', color: 'rgba(30,48,32,0.5)', marginTop: 24, fontFamily: 'Jost, sans-serif' }}>
           Already have an account?{' '}
-          <Link href="/login" style={{ color: '#f5f0e6', textDecoration: 'underline' }}>
+          <Link href="/login" style={{ color: '#1E3020', textDecoration: 'underline' }}>
             Sign in
           </Link>
         </p>
