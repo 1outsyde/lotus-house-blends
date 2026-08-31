@@ -298,6 +298,20 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
             </label>
           </div>
 
+          {!isEdit && (
+            <p style={{
+              fontFamily: 'Jost, sans-serif',
+              fontSize: '12px',
+              color: '#6B7280',
+              marginTop: 0,
+              marginBottom: '1rem',
+              lineHeight: '1.5',
+            }}>
+              New products are saved as <strong>Draft</strong>. Use the Publish button
+              on the product card to make it visible to customers.
+            </p>
+          )}
+
           {/* 8. Featured */}
           <div style={{ marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: 10 }}>
             <input

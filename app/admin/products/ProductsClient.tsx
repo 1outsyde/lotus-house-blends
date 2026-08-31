@@ -13,16 +13,27 @@ export interface ProductRow {
   images?: string[];
   isActive: boolean;
   status: 'live' | 'draft' | 'archived';
+  stripeProductId?: string | null;
   isFeatured: boolean;
   category?: string | null;
   createdAt?: string;
 }
 
-const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
+type DisplayStatus = 'live' | 'paused' | 'draft' | 'archived';
+
+const STATUS_BADGE: Record<DisplayStatus, { bg: string; color: string; label: string }> = {
   live:     { bg: '#1E3020',   color: '#F2EBD9', label: 'LIVE' },
+  paused:   { bg: '#B8831A',   color: '#fff',     label: 'PAUSED' },
   draft:    { bg: '#9CA3AF',   color: '#fff',     label: 'DRAFT' },
   archived: { bg: '#7F1D1D',   color: '#fff',     label: 'ARCHIVED' },
 };
+
+function getDisplayStatus(product: ProductRow): DisplayStatus {
+  if (product.status === 'live' && product.isActive) return 'live';
+  if (product.status === 'live' && !product.isActive) return 'paused';
+  if (product.status === 'archived') return 'archived';
+  return 'draft';
+}
 
 async function refetch(): Promise<ProductRow[]> {
   const res = await fetch('/api/admin/products');
@@ -110,6 +121,57 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
     }
   }
 
+  async function handlePublish(product: ProductRow) {
+    setLoadingId(product.id);
+    setError('');
+    try {
+      const isFirstPublish = !product.stripeProductId;
+      if (isFirstPublish) {
+        const res = await fetch(`/api/admin/products/${product.id}/go-live`, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json() as { message?: string; error?: string };
+          throw new Error(err.message ?? err.error ?? 'Could not publish product. Make sure Stripe is connected.');
+        }
+      } else {
+        const res = await fetch(`/api/admin/products/${product.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'live', isActive: true }),
+        });
+        if (!res.ok) {
+          const err = await res.json() as { error?: string };
+          throw new Error(err.error ?? 'Could not publish product. Please try again.');
+        }
+      }
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  async function handleUnpublish(product: ProductRow) {
+    setLoadingId(product.id);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'draft', isActive: false }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        throw new Error(err.error ?? 'Could not unpublish product. Please try again.');
+      }
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
   const openAdd = () => setModalProduct('new');
   const openEdit = (p: ProductRow) => setModalProduct(p);
   const closeModal = () => setModalProduct(null);
@@ -154,7 +216,8 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
         <div className="lhb-pcard-grid">
           {products.map((product) => {
             const isLoading = loadingId === product.id;
-            const badge = STATUS_BADGE[product.status] ?? STATUS_BADGE.draft;
+            const displayStatus = getDisplayStatus(product);
+            const badge = STATUS_BADGE[displayStatus];
 
             return (
               <div key={product.id} className="lhb-pcard" style={{ opacity: isLoading ? 0.7 : 1 }}>
@@ -217,56 +280,90 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
                 </div>
 
                 {/* Actions */}
-                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(30,48,32,0.08)', display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => openEdit(product)}
-                    disabled={isLoading}
-                    style={{
-                      flex: 1, padding: '7px 0', background: 'transparent',
-                      border: '1px solid rgba(30,48,32,0.25)', color: '#1E3020',
-                      fontFamily: 'Jost, sans-serif', fontSize: '0.68rem', letterSpacing: '.1em',
-                      textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
-                    }}
-                  >
-                    Edit
-                  </button>
-                  {deleteConfirmId === product.id ? (
-                    <div style={{ flex: 1, display: 'flex', gap: 4 }}>
-                      <button
-                        onClick={() => deleteProduct(product.id)}
-                        style={{
-                          flex: 1, padding: '7px 0', background: '#C0392B', border: 'none',
-                          color: '#fff', fontFamily: 'Jost, sans-serif', fontSize: '0.62rem',
-                          letterSpacing: '.08em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
-                        }}
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(null)}
-                        style={{
-                          flex: 1, padding: '7px 0', background: 'transparent',
-                          border: '1px solid rgba(30,48,32,0.2)', color: 'rgba(30,48,32,0.5)',
-                          fontFamily: 'Jost, sans-serif', fontSize: '0.62rem', cursor: 'pointer', borderRadius: 2,
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
+                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(30,48,32,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
                     <button
-                      onClick={() => setDeleteConfirmId(product.id)}
+                      onClick={() => openEdit(product)}
                       disabled={isLoading}
                       style={{
                         flex: 1, padding: '7px 0', background: 'transparent',
-                        border: '1px solid rgba(192,57,43,0.35)', color: '#C0392B',
+                        border: '1px solid rgba(30,48,32,0.25)', color: '#1E3020',
                         fontFamily: 'Jost, sans-serif', fontSize: '0.68rem', letterSpacing: '.1em',
                         textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
                       }}
                     >
-                      Delete
+                      Edit
                     </button>
-                  )}
+                    {deleteConfirmId === product.id ? (
+                      <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+                        <button
+                          onClick={() => deleteProduct(product.id)}
+                          style={{
+                            flex: 1, padding: '7px 0', background: '#C0392B', border: 'none',
+                            color: '#fff', fontFamily: 'Jost, sans-serif', fontSize: '0.62rem',
+                            letterSpacing: '.08em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
+                          }}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          style={{
+                            flex: 1, padding: '7px 0', background: 'transparent',
+                            border: '1px solid rgba(30,48,32,0.2)', color: 'rgba(30,48,32,0.5)',
+                            fontFamily: 'Jost, sans-serif', fontSize: '0.62rem', cursor: 'pointer', borderRadius: 2,
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(product.id)}
+                        disabled={isLoading}
+                        style={{
+                          flex: 1, padding: '7px 0', background: 'transparent',
+                          border: '1px solid rgba(192,57,43,0.35)', color: '#C0392B',
+                          fontFamily: 'Jost, sans-serif', fontSize: '0.68rem', letterSpacing: '.1em',
+                          textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2,
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  {/* Publish / Unpublish */}
+                  {(displayStatus === 'draft' || displayStatus === 'archived') ? (
+                    <button
+                      onClick={() => handlePublish(product)}
+                      disabled={isLoading}
+                      style={{
+                        width: '100%', padding: '8px 0',
+                        background: isLoading ? 'rgba(30,48,32,0.5)' : '#1E3020',
+                        color: '#F2EBD9', border: 'none',
+                        fontFamily: 'Jost, sans-serif', fontSize: '0.68rem',
+                        letterSpacing: '.12em', textTransform: 'uppercase',
+                        cursor: isLoading ? 'not-allowed' : 'pointer', borderRadius: 2,
+                      }}
+                    >
+                      Publish
+                    </button>
+                  ) : (displayStatus === 'live' || displayStatus === 'paused') ? (
+                    <button
+                      onClick={() => handleUnpublish(product)}
+                      disabled={isLoading}
+                      style={{
+                        width: '100%', padding: '8px 0',
+                        background: 'transparent',
+                        color: '#1E3020', border: '1px solid #1E3020',
+                        fontFamily: 'Jost, sans-serif', fontSize: '0.68rem',
+                        letterSpacing: '.12em', textTransform: 'uppercase',
+                        cursor: isLoading ? 'not-allowed' : 'pointer', borderRadius: 2,
+                      }}
+                    >
+                      Unpublish
+                    </button>
+                  ) : null}
                 </div>
               </div>
             );
