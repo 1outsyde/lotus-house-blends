@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import DashboardCalendar from './DashboardCalendar';
+import ManagePayoutsButton from './ManagePayoutsButton';
 import UpNextCard from './UpNextCard';
 
 interface Order {
@@ -101,9 +102,12 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.2rem', fontWeight: 500, color: '#1E3020', margin: '0 0 32px' }}>
-        Dashboard
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+        <h1 style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.2rem', fontWeight: 500, color: '#1E3020', margin: 0 }}>
+          Dashboard
+        </h1>
+        <ManagePayoutsButton />
+      </div>
 
       {fetchError && (
         <p style={{ color: '#C0392B', fontSize: '0.85rem', marginBottom: 20, fontFamily: 'Jost, sans-serif' }}>{fetchError}</p>
