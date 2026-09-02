@@ -704,6 +704,18 @@ export default function AccountPage() {
       {/* Header (moss background) */}
       <div style={{ background: MOSS, paddingTop: 40, paddingBottom: 0 }}>
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px' }}>
+          {/* Back link */}
+          <Link
+            href="/"
+            style={{
+              display: 'inline-block', marginBottom: 20,
+              fontFamily: FONT_BODY, fontSize: '0.8125rem',
+              color: 'rgba(242,235,217,0.7)', textDecoration: 'none',
+            }}
+          >
+            ← Back to Shop
+          </Link>
+
           {/* Avatar + identity */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
             <Avatar imageUrl={user.profileImageUrl} initial={initial} size={56} />
