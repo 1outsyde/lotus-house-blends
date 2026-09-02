@@ -88,11 +88,11 @@ const UPCOMING_APPT_STATUSES   = new Set(['confirmed', 'pending'])
 const PAST_APPT_STATUSES       = new Set(['completed', 'cancelled', 'no_show'])
 
 const REDEMPTION_TIERS = [
-  { pts: 500,   dollars: 5   },
-  { pts: 1000,  dollars: 10  },
-  { pts: 2500,  dollars: 25  },
-  { pts: 5000,  dollars: 50  },
-  { pts: 10000, dollars: 100 },
+  { pts: 2500,  dollars: 5   },
+  { pts: 5000,  dollars: 10  },
+  { pts: 12500, dollars: 25  },
+  { pts: 25000, dollars: 50  },
+  { pts: 50000, dollars: 100 },
 ]
 
 // ─── Shared card wrapper ──────────────────────────────────────────────────────
@@ -387,7 +387,7 @@ function RewardsSection({ loyaltyPoints }: { loyaltyPoints: number }) {
       <Card>
         <SectionTitle>How You Earn</SectionTitle>
         <p style={{ fontFamily: FONT_BODY, fontSize: '0.875rem', color: MUTED, lineHeight: 1.7 }}>
-          Earn 4 points for every dollar spent. Points are added automatically after each purchase and work across all Outsyde-powered stores.
+          Earn approximately 37 points for every dollar spent. Points are added automatically after each purchase and work across all Outsyde-powered stores. 2,500 points minimum to redeem.
         </p>
       </Card>
 
