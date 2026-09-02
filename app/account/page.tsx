@@ -629,8 +629,8 @@ function ProfileSection() {
         </p>
         <p style={{ fontFamily: FONT_BODY, fontSize: '0.8rem', color: MUTED }}>
           To change your email address, contact{' '}
-          <a href="mailto:support@goutsyde.com" style={{ color: GOLD, textDecoration: 'underline' }}>
-            support@goutsyde.com
+          <a href="mailto:info@goutsyde.com" style={{ color: GOLD, textDecoration: 'underline' }}>
+            info@goutsyde.com
           </a>
         </p>
       </Card>
