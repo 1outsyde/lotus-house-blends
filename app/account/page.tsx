@@ -387,7 +387,15 @@ function RewardsSection({ loyaltyPoints }: { loyaltyPoints: number }) {
       <Card>
         <SectionTitle>How You Earn</SectionTitle>
         <p style={{ fontFamily: FONT_BODY, fontSize: '0.875rem', color: MUTED, lineHeight: 1.7 }}>
-          Earn approximately 37 points for every dollar spent. Points are added automatically after each purchase and work across all Outsyde-powered stores. 2,500 points minimum to redeem.
+          Points are added automatically with every purchase. The more you shop, the more you save.
+        </p>
+      </Card>
+
+      {/* What are points */}
+      <Card>
+        <SectionTitle>What Are Points?</SectionTitle>
+        <p style={{ fontFamily: FONT_BODY, fontSize: '0.875rem', color: MUTED, lineHeight: 1.7 }}>
+          Points accumulate with every transaction across all Outsyde-powered stores. Redeem them at checkout for a discount on your next purchase.
         </p>
       </Card>
 
@@ -416,7 +424,7 @@ function RewardsSection({ loyaltyPoints }: { loyaltyPoints: number }) {
           })}
         </div>
         <p style={{ fontFamily: FONT_BODY, fontSize: '0.78rem', color: MUTED, marginTop: 16, lineHeight: 1.6 }}>
-          Points are applied at checkout. Select your redemption amount during payment.
+          Points are applied at checkout.
         </p>
       </Card>
 
