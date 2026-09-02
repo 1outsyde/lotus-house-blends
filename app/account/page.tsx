@@ -30,13 +30,12 @@ const ALL_TABS: TabDef[] = [
 
 interface Order {
   id: string
+  orderNumber?: string
   createdAt: string
   status: string
-  total_amount?: number
-  totalCents?: number
-  tracking_number?: string
-  carrier?: string
-  items?: { name: string; variantLabel?: string; quantity: number; priceCents?: number; price?: number }[]
+  total?: number
+  shipment?: { trackingNumber?: string; carrier?: string } | null
+  items?: { name: string; variantLabel?: string; quantity: number; price?: number }[]
 }
 
 interface Appointment {
@@ -222,7 +221,7 @@ function OrdersSection() {
 }
 
 function OrderCard({ order }: { order: Order }) {
-  const totalCents = order.totalCents ?? (order.total_amount != null ? order.total_amount : 0)
+  const totalCents = order.total ?? 0
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
@@ -249,12 +248,12 @@ function OrderCard({ order }: { order: Order }) {
         </div>
       )}
 
-      {order.tracking_number && (
+      {order.shipment?.trackingNumber && (
         <div style={{ background: 'rgba(184,131,26,0.07)', border: `1px solid rgba(184,131,26,0.2)`, borderRadius: 4, padding: '8px 12px', marginBottom: 12, fontFamily: FONT_BODY, fontSize: '0.8rem' }}>
           <span style={{ color: GOLD, fontWeight: 600 }}>
-            {order.carrier ? `${order.carrier}: ` : 'Tracking: '}
+            {order.shipment.carrier ? `${order.shipment.carrier}: ` : 'Tracking: '}
           </span>
-          <span style={{ color: MOSS }}>{order.tracking_number}</span>
+          <span style={{ color: MOSS }}>{order.shipment.trackingNumber}</span>
         </div>
       )}
 
