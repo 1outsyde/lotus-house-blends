@@ -323,6 +323,9 @@ export default function HomePage() {
                   Admin
                 </Link>
               )}
+              <Link href="/account" style={{ color: "rgba(255,255,255,.8)", textDecoration: "none", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>
+                My Account
+              </Link>
               <button
                 onClick={logout}
                 style={{ background: "none", border: "none", color: "rgba(255,255,255,.8)", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}
