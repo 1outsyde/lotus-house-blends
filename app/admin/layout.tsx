@@ -13,7 +13,7 @@ const VENDOR_CONFIG = {
 function timeGreeting(firstName: string): string {
   const h = new Date().getHours()
   const tod = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
-  return `Good ${tod}, ${firstName}.`
+  return `Good ${tod}, ${firstName.trim()}.`
 }
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
