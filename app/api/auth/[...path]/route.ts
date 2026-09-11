@@ -6,12 +6,18 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const token = req.cookies.get('outsyde_access_token')?.value ?? ''
+  const cookieHeader = req.headers.get('cookie') ?? ''
   const { path } = await params
   const pathStr = path.join('/')
   const body = await req.text()
   const res = await fetch(`${BACKEND}/api/auth/${pathStr}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: req.headers.get('cookie') ?? '' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
+      Cookie: cookieHeader,
+    },
     body,
   })
   const data = await res.json()
@@ -26,12 +32,14 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const token = req.cookies.get('outsyde_access_token')?.value ?? ''
+  const cookieHeader = req.headers.get('cookie') ?? ''
   const { path } = await params
   const pathStr = path.join('/')
   const res = await fetch(`${BACKEND}/api/auth/${pathStr}`, {
     headers: {
-      Authorization: req.headers.get('authorization') ?? '',
-      Cookie: req.headers.get('cookie') ?? '',
+      Authorization: req.headers.get('authorization') || (token ? `Bearer ${token}` : ''),
+      Cookie: cookieHeader,
     },
   })
   return NextResponse.json(await res.json(), { status: res.status })
