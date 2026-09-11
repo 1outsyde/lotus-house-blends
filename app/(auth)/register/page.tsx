@@ -36,7 +36,7 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
-      await register({ email, password, firstName, lastName })
+      await register({ email, password, firstName, lastName, source: 'lotus-house-blends' })
       router.push('/account')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.'
