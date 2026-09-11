@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import DashboardCalendar from './DashboardCalendar';
 import ManagePayoutsButton from './ManagePayoutsButton';
 import UpNextCard from './UpNextCard';
@@ -35,6 +36,10 @@ function toDateKey(dateStr: string): string {
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
   const token = cookieStore.get('outsyde_access_token')?.value ?? '';
+
+  if (!token) {
+    redirect('/login?redirect=/admin/dashboard');
+  }
 
   const apiUrl = process.env.OUTSYDE_API_URL;
 

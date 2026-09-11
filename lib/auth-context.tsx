@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data } = await outsydeClient.post<{ user: User; accessToken?: string }>('/auth/mobile/login', { email, password })
     if (data.accessToken && typeof window !== 'undefined') {
       localStorage.setItem('outsyde_access_token', data.accessToken)
-      document.cookie = `outsyde_access_token=${data.accessToken}; path=/; SameSite=Lax`
+      document.cookie = `outsyde_access_token=${data.accessToken}; path=/; SameSite=Lax; max-age=604800; Secure`
     }
     setUser(data.user)
     return data.user
