@@ -6,10 +6,7 @@ export function proxy(request: NextRequest) {
   if (!pathname.startsWith('/admin')) return NextResponse.next()
   if (pathname.startsWith('/admin/login')) return NextResponse.next()
 
-  // The backend sets 'refreshToken' as the only httpOnly cookie.
-  // Access tokens live in localStorage — the browser never sends them in cookies.
-  // If refreshToken is absent the user definitely has no session.
-  const refreshToken = request.cookies.get('refreshToken')?.value
+  const refreshToken = request.cookies.get('outsyde_access_token')?.value
 
   if (!refreshToken) {
     return NextResponse.redirect(new URL('/login?redirect=/admin', request.url))
