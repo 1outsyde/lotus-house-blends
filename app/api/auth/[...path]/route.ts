@@ -41,6 +41,7 @@ export async function GET(
       Authorization: req.headers.get('authorization') || (token ? `Bearer ${token}` : ''),
       Cookie: cookieHeader,
     },
+    cache: 'no-store',
   })
   return NextResponse.json(await res.json(), { status: res.status })
 }

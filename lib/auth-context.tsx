@@ -5,8 +5,8 @@ import { outsydeClient } from './outsyde'
 export interface User {
   id: string
   email: string
-  firstName: string
-  lastName: string
+  firstName: string | null
+  lastName: string | null
   role: string
   loyaltyPoints: number
   profileImageUrl?: string | null
