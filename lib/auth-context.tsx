@@ -25,6 +25,23 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delay = 3000): Promise<Response | null> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options)
+      if (res.ok) return res
+      if (res.status === 401 && i < retries - 1) {
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+      return res
+    } catch {
+      if (i < retries - 1) await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  return null
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -34,9 +51,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const load = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null
-        const { data } = await outsydeClient.get<{ user?: User } & Partial<User>>('/auth/me', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        if (!token) {
+          if (mounted) setUser(null)
+          return
+        }
+        const res = await fetchWithRetry('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
         })
+        if (!res || !res.ok) {
+          if (mounted) setUser(null)
+          return
+        }
+        const data: { user?: User } & Partial<User> = await res.json()
         if (mounted) setUser(data.user ?? (data.id ? (data as User) : null))
       } catch {
         if (mounted) setUser(null)
