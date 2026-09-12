@@ -28,6 +28,17 @@ function fmt(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function formatShippingAddress(raw: string | null): string {
+  if (!raw) return '—';
+  try {
+    const addr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const street = addr.line2 ? `${addr.line1}\n${addr.line2}` : addr.line1;
+    return `${street}\n${addr.city}, ${addr.state} ${addr.zipCode}`;
+  } catch {
+    return raw;
+  }
+}
+
 function toDateKey(dateStr: string): string {
   const d = new Date(dateStr);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -81,7 +92,7 @@ export default async function AdminDashboard() {
   const upNext = upNextRaw ? {
     id: upNextRaw.id,
     orderNumber: upNextRaw.order_number,
-    shippingAddress: upNextRaw.shipping_address ?? '—',
+    shippingAddress: formatShippingAddress(upNextRaw.shipping_address),
     itemsSummary: itemsSummary(upNextRaw.items),
     totalAmount: upNextRaw.total_amount,
   } : null;
