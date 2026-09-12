@@ -43,7 +43,7 @@ export default function UpNextCard({ order }: Props) {
         <p style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'rgba(30,48,32,0.45)', marginBottom: 8 }}>
           #{String(order.orderNumber).padStart(4, '0')}
         </p>
-        <p style={{ fontSize: '0.95rem', color: '#1E3020', fontFamily: 'Jost, sans-serif', marginBottom: 4 }}>
+        <p style={{ fontSize: '0.95rem', color: '#1E3020', fontFamily: 'Jost, sans-serif', marginBottom: 4, whiteSpace: 'pre-line' }}>
           {order.shippingAddress}
         </p>
         <p style={{ fontSize: '0.82rem', color: 'rgba(30,48,32,0.55)', fontFamily: 'Jost, sans-serif', marginBottom: 12 }}>
