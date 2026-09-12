@@ -10,10 +10,11 @@ const VENDOR_CONFIG = {
   vendorName: 'Lotus House Blends',
 } as const
 
-function timeGreeting(firstName: string): string {
+function timeGreeting(firstName: string | null | undefined): string {
   const h = new Date().getHours()
   const tod = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
-  return `Good ${tod}, ${firstName.trim()}.`
+  const name = firstName?.trim()
+  return name ? `Good ${tod}, ${name}.` : `Good ${tod}.`
 }
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
