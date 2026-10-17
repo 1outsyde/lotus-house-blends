@@ -80,10 +80,11 @@ export default async function AdminDashboard() {
   }
 
   const totalOrders = orders.length;
-  const totalRevenueCents = orders
-    .filter((o) => o.status !== 'cancelled')
-    .reduce((sum, o) => sum + (o.total_amount ?? 0), 0);
-  const avgOrderValueCents = totalOrders > 0 ? Math.round(totalRevenueCents / totalOrders) : 0;
+  // Revenue counts only money captured through Outsyde: paid, shipped or delivered orders.
+  // Unpaid (pending), cancelled and refunded orders never count (same rule as the backend).
+  const paidOrders = orders.filter((o) => ['paid', 'shipped', 'delivered'].includes(o.status));
+  const totalRevenueCents = paidOrders.reduce((sum, o) => sum + (o.total_amount ?? 0), 0);
+  const avgOrderValueCents = paidOrders.length > 0 ? Math.round(totalRevenueCents / paidOrders.length) : 0;
 
   const upNextRaw = [...orders]
     .filter((o) => o.status === 'paid')
