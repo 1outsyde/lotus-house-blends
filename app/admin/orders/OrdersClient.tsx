@@ -16,6 +16,7 @@ export interface OrderRow {
   created_at: string;
   tracking_number: string | null;
   carrier: string | null;
+  discount_amount_cents?: number;
   isNewest?: boolean;
 }
 
@@ -184,6 +185,11 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                     </div>
                   ))}
                 </div>
+                {(order.discount_amount_cents ?? 0) > 0 && (
+                  <p style={{ marginTop: 12, fontSize: '0.8rem', color: '#2D7A47', lineHeight: 1.5, fontFamily: 'Jost, sans-serif' }}>
+                    Customer used ${((order.discount_amount_cents ?? 0) / 100).toFixed(2)} Outsyde rewards, paid by Outsyde. Your payout is unchanged.
+                  </p>
+                )}
               </div>
 
               {/* Tracking info (when shipped) */}

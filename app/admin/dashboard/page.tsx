@@ -15,6 +15,7 @@ interface Order {
   created_at: string;
   tracking_number: string | null;
   carrier: string | null;
+  discount_amount_cents?: number | null;
 }
 
 function itemsSummary(items: Order['items']): string {
@@ -96,6 +97,7 @@ export default async function AdminDashboard() {
     shippingAddress: formatShippingAddress(upNextRaw.shipping_address),
     itemsSummary: itemsSummary(upNextRaw.items),
     totalAmount: upNextRaw.total_amount,
+    discountAmountCents: Number(upNextRaw.discount_amount_cents ?? 0) || 0,
   } : null;
 
   // Richer date map: each key → array of { status, orderNumber, amount }
