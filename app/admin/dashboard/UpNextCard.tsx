@@ -10,6 +10,7 @@ interface UpNextOrder {
   shippingAddress: string;
   itemsSummary: string;
   totalAmount: number;
+  discountAmountCents?: number;
 }
 
 interface Props {
@@ -52,6 +53,11 @@ export default function UpNextCard({ order }: Props) {
         <p style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '1.25rem', fontWeight: 500, color: '#1E3020', marginBottom: 20 }}>
           {fmt(order.totalAmount)}
         </p>
+        {(order.discountAmountCents ?? 0) > 0 && (
+          <p style={{ fontSize: '0.78rem', color: '#2D7A47', fontFamily: 'Jost, sans-serif', marginTop: -12, marginBottom: 20, lineHeight: 1.5 }}>
+            Customer used {fmt(order.discountAmountCents ?? 0)} Outsyde rewards, paid by Outsyde. Your payout is unchanged.
+          </p>
+        )}
         <button
           onClick={() => setFulfilling(true)}
           style={{

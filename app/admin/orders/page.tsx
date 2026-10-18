@@ -13,6 +13,7 @@ interface RawOrder {
   tracking_number: string | null;
   carrier: string | null;
   customer_name: string | null;
+  discount_amount_cents?: number | null;
 }
 
 export default async function AdminOrders() {
@@ -80,6 +81,7 @@ export default async function AdminOrders() {
           tracking_number: r.tracking_number ?? null,
           carrier: r.carrier ?? null,
           customer_name: r.customer_name ?? null,
+          discount_amount_cents: Number(r.discount_amount_cents ?? 0) || 0,
           isNewest: r.id === newestId,
         };
       });

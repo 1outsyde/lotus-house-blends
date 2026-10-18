@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -156,9 +156,177 @@ function AddressFields({
   );
 }
 
+// ─── Outsyde rewards ("Use my points") ────────────────────────────────────────
+interface RewardsCode {
+  id: string;
+  code: string;
+  discountCents: number;
+  expiresAt: string;
+  minimumOrderCents?: number;
+}
+interface RewardsTier {
+  points: number;
+  discountCents: number;
+  minimumOrderCents?: number;
+}
+interface RewardsData {
+  balance: number;
+  activeCodes: RewardsCode[];
+  tiers: RewardsTier[];
+}
+
+function fmtCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+function fmtOff(cents: number): string {
+  return cents % 100 === 0 ? `$${cents / 100} off` : `${fmtCents(cents)} off`;
+}
+// Product rule: the order (before the service fee) must be at least 10x the code.
+function minOrderFor(discountCents: number, minimumOrderCents?: number): number {
+  return Math.max(discountCents * 10, minimumOrderCents ?? 0);
+}
+
+async function fetchRewards(): Promise<RewardsData | null> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null;
+  const res = await fetch('/api/consumer/points', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: 'no-store',
+  });
+  if (!res.ok) return null;
+  const d = await res.json() as Partial<RewardsData>;
+  return {
+    balance: typeof d.balance === 'number' ? d.balance : 0,
+    activeCodes: Array.isArray(d.activeCodes) ? d.activeCodes : [],
+    tiers: Array.isArray(d.tiers) ? d.tiers : [],
+  };
+}
+
+function RewardsBlock({
+  data, subtotalCents, selectedId, inUseIds, busy, message,
+  onSelect, onRedeem,
+}: {
+  data: RewardsData | null;
+  subtotalCents: number;
+  selectedId: string | null;
+  inUseIds: Set<string>;
+  busy: boolean;
+  message: string;
+  onSelect: (code: RewardsCode | null) => void;
+  onRedeem: (tier: RewardsTier) => void;
+}) {
+  const [confirmTier, setConfirmTier] = useState<RewardsTier | null>(null);
+
+  if (!data) return null;
+  const codes = data.activeCodes;
+  if (codes.length === 0 && data.balance < 2500) return null;
+
+  const heldValues = new Set(codes.map(c => c.discountCents));
+  const tiers = data.tiers.filter(t => t.points <= data.balance && !heldValues.has(t.discountCents));
+
+  const optionSt = (active: boolean, disabled: boolean): React.CSSProperties => ({
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem',
+    width: '100%', textAlign: 'left', padding: '.75rem 1rem', marginBottom: '.5rem',
+    border: `1px solid ${active ? T.moss : T.border}`,
+    background: active ? T.cream : T.parchment,
+    fontFamily: BODY, fontSize: '.88rem', color: T.brownDark,
+    cursor: disabled || busy ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1, borderRadius: 0,
+  });
+  const reasonSt: React.CSSProperties = { fontFamily: BODY, fontSize: '.75rem', color: T.textMuted };
+
+  return (
+    <section style={{ marginBottom: '2.5rem' }}>
+      <h2 style={sectionHead}>Use My Points</h2>
+      <p style={{ fontFamily: BODY, fontSize: '.82rem', color: T.textMuted, margin: '0 0 1rem', lineHeight: 1.6 }}>
+        You have {data.balance.toLocaleString()} Outsyde loyalty rewards points.
+      </p>
+
+      <button type="button" disabled={busy}
+        onClick={() => { setConfirmTier(null); onSelect(null); }}
+        style={optionSt(selectedId === null, false)}>
+        <span>Don&apos;t use points</span>
+      </button>
+
+      {codes.map(c => {
+        const inUse = inUseIds.has(c.id);
+        const tooSmall = subtotalCents < minOrderFor(c.discountCents, c.minimumOrderCents);
+        const disabled = inUse || tooSmall;
+        return (
+          <button key={c.id} type="button" disabled={disabled || busy}
+            onClick={() => { setConfirmTier(null); onSelect(c); }}
+            style={optionSt(selectedId === c.id, disabled)}>
+            <span>{fmtOff(c.discountCents)}</span>
+            {inUse && <span style={reasonSt}>In use on another order right now</span>}
+            {!inUse && tooSmall && (
+              <span style={reasonSt}>For orders of {fmtCents(minOrderFor(c.discountCents, c.minimumOrderCents))} or more</span>
+            )}
+          </button>
+        );
+      })}
+
+      {tiers.map(t => {
+        const tooSmall = subtotalCents < minOrderFor(t.discountCents, t.minimumOrderCents);
+        const confirming = confirmTier?.points === t.points;
+        return (
+          <div key={t.points}>
+            <button type="button" disabled={tooSmall || busy}
+              onClick={() => setConfirmTier(t)}
+              style={optionSt(confirming, tooSmall)}>
+              <span>{t.points.toLocaleString()} points for {fmtOff(t.discountCents)}</span>
+              {tooSmall && (
+                <span style={reasonSt}>For orders of {fmtCents(minOrderFor(t.discountCents, t.minimumOrderCents))} or more</span>
+              )}
+            </button>
+            {confirming && (
+              <div style={{ padding: '.75rem 1rem', marginBottom: '.5rem', border: `1px solid ${T.borderMid}`,
+                background: T.cream, fontFamily: BODY, fontSize: '.82rem', color: T.textMid }}>
+                <p style={{ margin: '0 0 .6rem', lineHeight: 1.5 }}>
+                  Spend {t.points.toLocaleString()} points for {fmtOff(t.discountCents)} this order?
+                </p>
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <button type="button" disabled={busy}
+                    onClick={() => { setConfirmTier(null); onRedeem(t); }}
+                    style={{ padding: '.5rem 1.1rem', background: T.moss, color: T.parchment, border: 'none',
+                      fontFamily: BODY, fontSize: '.72rem', letterSpacing: '.12em', textTransform: 'uppercase',
+                      cursor: busy ? 'not-allowed' : 'pointer' }}>
+                    {busy ? 'Applying...' : 'Confirm'}
+                  </button>
+                  <button type="button" disabled={busy}
+                    onClick={() => setConfirmTier(null)}
+                    style={{ padding: '.5rem 1.1rem', background: 'transparent', color: T.textMid,
+                      border: `1px solid ${T.border}`, fontFamily: BODY, fontSize: '.72rem',
+                      letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {message && (
+        <p style={{ color: '#c0392b', fontFamily: BODY, fontSize: '.82rem', marginTop: '.5rem', lineHeight: 1.5 }}>
+          {message}
+        </p>
+      )}
+    </section>
+  );
+}
+
 // ─── Order Summary ────────────────────────────────────────────────────────────
-function OrderSummary({ items }: { items: CartItem[] }) {
+function OrderSummary({ items, rewardsDiscountCents = 0, totalOverrideCents = null }: {
+  items: CartItem[];
+  rewardsDiscountCents?: number;
+  totalOverrideCents?: number | null;
+}) {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+  // With a code, only show a total the backend confirmed (it includes the service fee).
+  const totalText = rewardsDiscountCents > 0
+    ? (totalOverrideCents != null
+        ? fmtCents(totalOverrideCents)
+        : `${fmtCents(Math.max(0, Math.round(subtotal * 100) - rewardsDiscountCents))} plus service fee`)
+    : `$${subtotal.toFixed(2)}`;
 
   return (
     <div style={{ position: 'sticky', top: '2rem' }}>
@@ -205,6 +373,13 @@ function OrderSummary({ items }: { items: CartItem[] }) {
           <span>Shipping</span>
           <span style={{ color: T.sage }}>Free</span>
         </div>
+        {rewardsDiscountCents > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem',
+            fontFamily: BODY, fontSize: '.85rem', color: T.sage }}>
+            <span>Outsyde rewards</span>
+            <span>{fmtCents(rewardsDiscountCents)} off</span>
+          </div>
+        )}
 
         <div style={{ borderTop: `1px solid ${T.borderMid}`, paddingTop: '.85rem',
           display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -212,7 +387,7 @@ function OrderSummary({ items }: { items: CartItem[] }) {
             Total
           </span>
           <span style={{ fontFamily: DISPLAY, fontSize: '1.5rem', fontWeight: 600, color: T.brownDark }}>
-            ${subtotal.toFixed(2)}
+            {totalText}
           </span>
         </div>
       </div>
@@ -271,6 +446,75 @@ function CheckoutForm() {
   const [error,   setError]   = useState('');
   const [btnHover, setBtnHover] = useState(false);
 
+  // Outsyde rewards
+  const [rewards, setRewards] = useState<RewardsData | null>(null);
+  const [promo, setPromo] = useState<RewardsCode | null>(null);
+  const [inUseIds, setInUseIds] = useState<Set<string>>(() => new Set());
+  const [rewardsBusy, setRewardsBusy] = useState(false);
+  const [rewardsMsg, setRewardsMsg] = useState('');
+  const [chargedCents, setChargedCents] = useState<number | null>(null);
+
+  const reloadRewards = useCallback(async () => {
+    try {
+      const d = await fetchRewards();
+      setRewards(d);
+    } catch {
+      setRewards(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    let cancelled = false;
+    fetchRewards()
+      .then(d => { if (!cancelled) setRewards(d); })
+      .catch(() => { if (!cancelled) setRewards(null); });
+    return () => { cancelled = true; };
+  }, [authed]);
+
+  const selectPromo = (code: RewardsCode | null) => {
+    setPromo(code);
+    setChargedCents(null);
+    setRewardsMsg('');
+  };
+
+  const redeemTier = async (tier: RewardsTier) => {
+    setRewardsBusy(true);
+    setRewardsMsg('');
+    try {
+      const token = localStorage.getItem('outsyde_access_token');
+      const res = await fetch('/api/consumer/points/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ pointsToRedeem: tier.points }),
+      });
+      const d = await res.json().catch(() => ({})) as {
+        success?: boolean; codeId?: string; code?: string; discountCents?: number;
+        expiresAt?: string; minimumOrderCents?: number; error?: string;
+      };
+      if (!res.ok || !d.success || !d.codeId) {
+        setRewardsMsg(typeof d.error === 'string' && d.error ? d.error : 'We could not apply your points. Please try again.');
+        await reloadRewards();
+        return;
+      }
+      selectPromo({
+        id: d.codeId,
+        code: d.code ?? '',
+        discountCents: d.discountCents ?? tier.discountCents,
+        expiresAt: d.expiresAt ?? '',
+        minimumOrderCents: d.minimumOrderCents,
+      });
+      await reloadRewards();
+    } catch {
+      setRewardsMsg('We could not apply your points. Please try again.');
+    } finally {
+      setRewardsBusy(false);
+    }
+  };
+
   useEffect(() => {
     const cart = getCart();
     if (cart.length === 0) { router.push('/'); return; }
@@ -316,17 +560,40 @@ function CheckoutForm() {
             state: shipState,
             zipCode: shipZip,
           },
+          // Outsyde rewards code, only when the customer picked one.
+          ...(promo ? { promoCodeId: promo.id } : {}),
         }),
       });
       const coData = await coRes.json() as {
         clientSecret?: string;
         paymentIntentId?: string;
         orderId?: string;
-        feeBreakdown?: { totalChargedToConsumerCents: number };
-        error?: string;
+        feeBreakdown?: { totalChargedToConsumerCents: number; discountCents?: number; amountChargedCents?: number };
+        error?: string | { code?: string; message?: string };
         success?: boolean;
       };
-      if (!coRes.ok || !coData.clientSecret) throw new Error(coData.error ?? 'Failed to create payment.');
+      if (!coRes.ok || !coData.clientSecret) {
+        const errObj = typeof coData.error === 'object' && coData.error ? coData.error : null;
+        const errCode = errObj?.code ?? '';
+        if (promo && errCode.includes('PROMO')) {
+          // Rewards code refused: show the backend's text, clear it, reload the list.
+          if (errCode === 'PROMO_IN_USE') {
+            const id = promo.id;
+            setInUseIds(prev => new Set(prev).add(id));
+          }
+          selectPromo(null);
+          setRewardsMsg(errObj?.message ?? 'That rewards code could not be applied.');
+          await reloadRewards();
+          setLoading(false);
+          return;
+        }
+        throw new Error(
+          typeof coData.error === 'string' ? coData.error : (errObj?.message ?? 'Failed to create payment.')
+        );
+      }
+      if (promo && typeof coData.feeBreakdown?.amountChargedCents === 'number') {
+        setChargedCents(coData.feeBreakdown.amountChargedCents);
+      }
 
       // Step 2 — confirm card payment
       const card = elements.getElement(CardElement);
@@ -434,6 +701,18 @@ function CheckoutForm() {
               )}
             </section>
 
+            {/* Outsyde rewards (renders nothing when the customer has no usable points) */}
+            <RewardsBlock
+              data={rewards}
+              subtotalCents={subtotalCents}
+              selectedId={promo?.id ?? null}
+              inUseIds={inUseIds}
+              busy={rewardsBusy || loading}
+              message={rewardsMsg}
+              onSelect={selectPromo}
+              onRedeem={redeemTier}
+            />
+
             {/* 3. Payment */}
             <section style={{ marginBottom: '2rem' }}>
               <h2 style={sectionHead}>Payment Information</h2>
@@ -491,7 +770,11 @@ function CheckoutForm() {
                 transition: 'background .2s',
               }}
             >
-              {loading ? 'Processing...' : `Place Order — $${subtotal.toFixed(2)}`}
+              {loading
+                ? 'Processing...'
+                : promo
+                  ? (chargedCents != null ? `Place Order (${fmtCents(chargedCents)})` : 'Place Order')
+                  : `Place Order ($${subtotal.toFixed(2)})`}
             </button>
 
             {error && (
@@ -504,7 +787,11 @@ function CheckoutForm() {
 
           {/* ── RIGHT: Summary ──────────────────────────────────────── */}
           <div className="co-summary">
-            <OrderSummary items={items} />
+            <OrderSummary
+              items={items}
+              rewardsDiscountCents={promo?.discountCents ?? 0}
+              totalOverrideCents={promo ? chargedCents : null}
+            />
           </div>
         </div>
       </form>

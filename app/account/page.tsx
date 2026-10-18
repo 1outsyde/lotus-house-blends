@@ -352,6 +352,7 @@ function RewardsSection({ loyaltyPoints }: { loyaltyPoints: number }) {
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
   const [txLoading, setTxLoading]       = useState(true)
   const [txStub, setTxStub]             = useState(false)
+  const [activeCodes, setActiveCodes]   = useState<{ id: string; discountCents: number; expiresAt: string }[]>([])
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('outsyde_access_token') : null
@@ -362,7 +363,10 @@ function RewardsSection({ loyaltyPoints }: { loyaltyPoints: number }) {
       .then(data => {
         const txs = Array.isArray(data) ? data : (data.transactions ?? [])
         setTransactions(txs)
-        if (txs.length === 0 && data.stub !== false) setTxStub(true)
+        // The live endpoint returns tiers/activeCodes; only the fallback stub lacks them.
+        const isLive = !Array.isArray(data) && (Array.isArray(data.tiers) || Array.isArray(data.activeCodes))
+        if (!Array.isArray(data) && Array.isArray(data.activeCodes)) setActiveCodes(data.activeCodes)
+        if (txs.length === 0 && data.stub !== false && !isLive) setTxStub(true)
       })
       .catch(() => setTxStub(true))
       .finally(() => setTxLoading(false))
@@ -427,6 +431,26 @@ function RewardsSection({ loyaltyPoints }: { loyaltyPoints: number }) {
           Points are applied at checkout.
         </p>
       </Card>
+
+      {/* Active rewards codes */}
+      {activeCodes.length > 0 && (
+        <Card>
+          <SectionTitle>Your Rewards Codes</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {activeCodes.map(c => (
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${BORDER}` }}>
+                <span style={{ fontFamily: FONT_BODY, fontSize: '0.9rem', fontWeight: 700, color: MOSS }}>{formatCents(c.discountCents)} off</span>
+                {c.expiresAt && (
+                  <span style={{ fontFamily: FONT_BODY, fontSize: '0.8rem', color: MUTED }}>Use by {formatDateShort(c.expiresAt)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: FONT_BODY, fontSize: '0.78rem', color: MUTED, marginTop: 16, lineHeight: 1.6 }}>
+            Choose a code under Use My Points when you check out.
+          </p>
+        </Card>
+      )}
 
       {/* Point history */}
       <Card>
