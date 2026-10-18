@@ -321,8 +321,11 @@ function OrderSummary({ items, rewardsDiscountCents = 0, totalOverrideCents = nu
   totalOverrideCents?: number | null;
 }) {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+  // With a code, only show a total the backend confirmed (it includes the service fee).
   const totalText = rewardsDiscountCents > 0
-    ? fmtCents(totalOverrideCents ?? Math.max(0, Math.round(subtotal * 100) - rewardsDiscountCents))
+    ? (totalOverrideCents != null
+        ? fmtCents(totalOverrideCents)
+        : `${fmtCents(Math.max(0, Math.round(subtotal * 100) - rewardsDiscountCents))} plus service fee`)
     : `$${subtotal.toFixed(2)}`;
 
   return (
@@ -767,11 +770,11 @@ function CheckoutForm() {
                 transition: 'background .2s',
               }}
             >
-              {loading ? 'Processing...' : `Place Order — ${
-                promo
-                  ? fmtCents(chargedCents ?? Math.max(0, subtotalCents - promo.discountCents))
-                  : `$${subtotal.toFixed(2)}`
-              }`}
+              {loading
+                ? 'Processing...'
+                : promo
+                  ? (chargedCents != null ? `Place Order (${fmtCents(chargedCents)})` : 'Place Order')
+                  : `Place Order ($${subtotal.toFixed(2)})`}
             </button>
 
             {error && (
