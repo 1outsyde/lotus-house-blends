@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { describePlan, formatPlanDay } from '@/lib/planState'
 
 const MOSS = '#1E3020'
 const GOLD = '#B8831A'
@@ -15,6 +16,9 @@ interface Subscription {
   currentPeriodEnd: string | null
   cancelAtPeriodEnd?: boolean
   stripeSubscriptionId: string | null
+  // Backend (additive): the day listings pause when the plan is late, and whether they are paused.
+  graceEndsAt?: string | null
+  listingsPaused?: boolean | null
 }
 
 interface Tier {
@@ -48,8 +52,10 @@ function StatusBadge({ status }: { status: string }) {
     trialing: { bg: 'rgba(184,131,26,0.1)', color: GOLD,  label: 'Trial' },
     past_due: { bg: 'rgba(180,50,30,0.08)', color: '#b43220', label: 'Past Due' },
     canceled: { bg: 'rgba(100,100,100,0.08)', color: '#555', label: 'Canceled' },
+    late:     { bg: 'rgba(184,131,26,0.12)', color: GOLD, label: 'Payment Late' },
+    paused:   { bg: 'rgba(180,50,30,0.08)', color: '#b43220', label: 'Paused' },
   }
-  const c = cfg[status] ?? { bg: 'rgba(100,100,100,0.08)', color: '#555', label: status }
+  const c = cfg[status] ?? { bg: 'rgba(100,100,100,0.08)', color: '#555', label: status.replace(/_/g, ' ') }
   return (
     <span style={{
       display: 'inline-block',
@@ -68,6 +74,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function SubscriptionClient({ subscription: subProp, tiers }: Props) {
   const [sub, setSub] = useState(subProp)
+  const plan = sub ? describePlan(sub) : null
 
   useEffect(() => {
     if (sub !== null) return
@@ -121,7 +128,7 @@ export default function SubscriptionClient({ subscription: subProp, tiers }: Pro
               <h2 style={{ ...heading, fontSize: '1.3rem' }}>
                 {sub.tierDisplayName ?? sub.tierName ?? 'Unknown Plan'}
               </h2>
-              <StatusBadge status={sub.status} />
+              <StatusBadge status={plan?.kind === 'late' || plan?.kind === 'paused' ? plan.kind : (sub.status ?? 'unknown')} />
               {sub.cancelAtPeriodEnd && (
                 <span style={{ fontSize: '0.68rem', color: '#b43220', fontFamily: 'Jost, sans-serif', letterSpacing: '.04em' }}>
                   Cancels at period end
@@ -132,8 +139,10 @@ export default function SubscriptionClient({ subscription: subProp, tiers }: Pro
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px 32px' }}>
               {[
                 { label: 'Monthly Price', value: sub.priceInCents != null ? `$${(sub.priceInCents / 100).toFixed(0)}/mo` : '—' },
-                { label: sub.cancelAtPeriodEnd ? 'Cancels On' : 'Renews On', value: fmtDate(sub.currentPeriodEnd) },
-                { label: 'Billing Status', value: sub.status.replace(/_/g, ' ') },
+                plan?.kind === 'late'
+                  ? { label: 'Listings Pause On', value: sub.graceEndsAt ? formatPlanDay(sub.graceEndsAt) : 'Soon' }
+                  : { label: sub.cancelAtPeriodEnd ? 'Cancels On' : 'Renews On', value: plan?.showRenewal ? fmtDate(sub.currentPeriodEnd) : '—' },
+                { label: 'Billing Status', value: (sub.status ?? 'unknown').replace(/_/g, ' ') },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p style={{ margin: '0 0 3px', fontSize: '0.62rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(30,48,32,0.4)' }}>{label}</p>
@@ -142,7 +151,7 @@ export default function SubscriptionClient({ subscription: subProp, tiers }: Pro
               ))}
             </div>
 
-            {(sub.status === 'past_due' || sub.status === 'canceled') && (
+            {(plan?.note || sub.status === 'canceled') && (
               <div style={{
                 marginTop: 20,
                 padding: '12px 16px',
@@ -153,9 +162,7 @@ export default function SubscriptionClient({ subscription: subProp, tiers }: Pro
                 color: '#b43220',
                 letterSpacing: '.02em',
               }}>
-                {sub.status === 'past_due'
-                  ? 'Your payment is past due. Please update your payment method to keep your plan active.'
-                  : 'Your subscription has been canceled. Contact support to reactivate.'}
+                {plan?.note ?? 'Your subscription has been canceled. Contact support to reactivate.'}
               </div>
             )}
           </>
