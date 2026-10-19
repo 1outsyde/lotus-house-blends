@@ -12,7 +12,7 @@ export interface ProductRow {
   imageUrl: string | null;
   images?: string[];
   isActive: boolean;
-  status: 'live' | 'draft' | 'archived';
+  status: 'live' | 'draft' | 'archived' | 'paused';
   stripeProductId?: string | null;
   isFeatured: boolean;
   category?: string | null;
@@ -29,6 +29,8 @@ const STATUS_BADGE: Record<DisplayStatus, { bg: string; color: string; label: st
 };
 
 function getDisplayStatus(product: ProductRow): DisplayStatus {
+  // Paused by the backend (plan payment late, or paused from the app): show it as paused, not draft.
+  if (product.status === 'paused') return 'paused';
   if (product.status === 'live' && product.isActive) return 'live';
   if (product.status === 'live' && !product.isActive) return 'paused';
   if (product.status === 'archived') return 'archived';
@@ -139,8 +141,9 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
           body: JSON.stringify({ status: 'live', isActive: true }),
         });
         if (!res.ok) {
-          const err = await res.json() as { error?: string };
-          throw new Error(err.error ?? 'Could not publish product. Please try again.');
+          // A refused go live (409 subscription_inactive while the plan is lapsed) explains itself in message.
+          const err = await res.json().catch(() => ({})) as { message?: string; error?: string };
+          throw new Error(err.message ?? err.error ?? 'Could not publish product. Please try again.');
         }
       }
       await reload();
@@ -333,7 +336,9 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
                     )}
                   </div>
                   {/* Publish / Unpublish */}
-                  {(displayStatus === 'draft' || displayStatus === 'archived') ? (
+                  {/* A product the backend paused (status 'paused') gets Publish, not Unpublish: unpublishing would
+                      turn it into a draft that paying the plan can't bring back. */}
+                  {(displayStatus === 'draft' || displayStatus === 'archived' || product.status === 'paused') ? (
                     <button
                       onClick={() => handlePublish(product)}
                       disabled={isLoading}
