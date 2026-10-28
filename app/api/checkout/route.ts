@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LHB_CONFIG } from '@/lib/lhb-config';
+import { sanitizeLineAddons } from '@/lib/productAddons';
 
 interface CartItem {
   id: string;
@@ -7,6 +8,8 @@ interface CartItem {
   price: number; // dollars
   qty: number;
   image: string;
+  productId?: string;
+  addons?: unknown;
 }
 
 export async function POST(req: NextRequest) {
@@ -29,13 +32,22 @@ export async function POST(req: NextRequest) {
 
   // Transform LHB cart items to the shape expected by POST /api/cart/payment-intent.
   // Each item needs vendorId (= LHB's businessId), productId, name, priceCents, quantity.
-  const backendItems = rawItems.map(item => ({
-    vendorId: LHB_CONFIG.businessId,
-    productId: item.id,
-    name: item.name,
-    priceCents: Math.round(item.price * 100),
-    quantity: item.qty,
-  }));
+  // Add-on picks pass through as ids and text only; the backend prices and checks them (backend #371).
+  const backendItems = [];
+  for (const item of rawItems) {
+    const addons = sanitizeLineAddons(item.addons);
+    if (addons === null) {
+      return NextResponse.json({ error: 'Something in your cart is no longer valid. Please remove it and add it again.' }, { status: 400 });
+    }
+    backendItems.push({
+      vendorId: LHB_CONFIG.businessId,
+      productId: typeof item.productId === 'string' && item.productId ? item.productId : item.id,
+      name: item.name,
+      priceCents: Math.round(item.price * 100),
+      quantity: item.qty,
+      ...(addons !== undefined ? { addons } : {}),
+    });
+  }
 
   const backendBody: Record<string, unknown> = {
     items: backendItems,

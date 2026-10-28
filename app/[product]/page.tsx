@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { addToCart, getCart, subscribe, CartItem } from "@/lib/cart";
+import { addToCart, cartLineId, getCart, subscribe, CartItem } from "@/lib/cart";
+import AddonPicker from "./AddonPicker";
+import {
+  addonGroupsOf, addonsLabel, addonsPerUnitCents, emptyPicks, missingPick, pickedAddons,
+  type AddonPicks, type PublicAddonGroup,
+} from "@/lib/productAddons";
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -135,6 +140,8 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [addonData, setAddonData] = useState<{ productId: string; groups: PublicAddonGroup[] } | null>(null);
+  const [picks, setPicks] = useState<AddonPicks>(emptyPicks());
 
   const refreshCount = useCallback(() => {
     setCartCount(getCart().reduce((s: number, i: CartItem) => s + i.qty, 0));
@@ -164,20 +171,44 @@ export default function ProductPage() {
   useEffect(() => {
     setAdded(false);
     setQty(1);
+    setPicks(emptyPicks());
   }, [slug]);
 
   const product = allProducts.find(p => p.slug === slug);
+
+  // Add-ons (backend #371) come from the product route; none = the page works exactly as before.
+  const productId = product?.id;
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_OUTSYDE_API_URL;
+    if (!apiUrl || !productId) return;
+    let live = true;
+    fetch(`${apiUrl}/api/products/${productId}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then((d: { addonGroups?: unknown; product?: { addonGroups?: unknown } } | null) => {
+        if (live) setAddonData({ productId, groups: addonGroupsOf(d?.addonGroups ?? d?.product?.addonGroups) });
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [productId]);
+  const groups = addonData && addonData.productId === productId ? addonData.groups : [];
+  const picked = pickedAddons(groups, picks);
+  const missing = groups.length > 0 ? missingPick(groups, picks) : null;
+  const unitPrice = product ? product.price + addonsPerUnitCents(picked) / 100 : 0;
   const related = product ? allProducts.filter(p => p.blend === product.blend && p.id !== product.id) : [];
 
   const handleAdd = () => {
-    if (!product) return;
+    if (!product || missing) return;
+    const withAddons = groups.length > 0
+      ? { productId: product.id, addons: picked, addonsLabel: addonsLabel(picked) }
+      : {};
     for (let i = 0; i < qty; i++) {
       addToCart({
-        id: product.id,
+        id: groups.length > 0 ? cartLineId(product.id, picked) : product.id,
         name: product.name,
-        price: product.price,
+        price: Math.round(unitPrice * 100) / 100,
         image: product.image,
         qty: 1,
+        ...withAddons,
       });
     }
     setAdded(true);
@@ -398,6 +429,10 @@ export default function ProductPage() {
             ))}
           </ul>
 
+          {groups.length > 0 && (
+            <AddonPicker groups={groups} picks={picks} onChange={(next) => { setPicks(next); setAdded(false); }} />
+          )}
+
           <div style={{ display: "flex", alignItems: "stretch", gap: ".85rem", flexWrap: "wrap" }}>
             <div style={{
               display: "flex", alignItems: "center",
@@ -420,18 +455,20 @@ export default function ProductPage() {
 
             <button
               onClick={handleAdd}
+              disabled={!!missing}
               style={{
                 flex: 1, minWidth: 200,
                 background: "var(--lhb-moss)", color: "var(--lhb-parchment)",
                 border: "none", padding: "0 2rem", height: 48,
                 fontFamily: "var(--font-body)", fontSize: ".78rem",
                 letterSpacing: ".16em", textTransform: "uppercase",
-                fontWeight: 500, cursor: "pointer", transition: "background .2s",
+                fontWeight: 500, cursor: missing ? "not-allowed" : "pointer", transition: "background .2s",
+                opacity: missing ? 0.6 : 1,
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--lhb-black)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--lhb-moss)"; }}
             >
-              Add to Cart — ${(product.price * qty).toFixed(2)}
+              {missing ?? `Add to Cart — $${(unitPrice * qty).toFixed(2)}`}
             </button>
           </div>
 

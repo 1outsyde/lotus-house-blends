@@ -351,6 +351,9 @@ function OrderSummary({ items, rewardsDiscountCents = 0, totalOverrideCents = nu
               <div style={{ fontFamily: DISPLAY, fontSize: '1rem', color: T.brownDark, lineHeight: 1.3 }}>
                 {item.name}
               </div>
+              {item.addonsLabel && (
+                <div style={{ fontFamily: BODY, fontSize: '.78rem', color: T.textMuted, marginTop: '.15rem' }}>{item.addonsLabel}</div>
+              )}
               <div style={{ fontFamily: BODY, fontSize: '.8rem', color: T.textMuted, marginTop: '.15rem' }}>
                 Qty: {item.qty}
               </div>

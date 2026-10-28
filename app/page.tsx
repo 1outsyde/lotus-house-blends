@@ -23,6 +23,8 @@ interface ApiProduct {
   imageUrl: string | null;
   isActive: boolean;
   status: string;
+  /** Backend #371: null when the product has no add-ons a customer can pick. */
+  addonSummary?: { groupCount: number; hasRequired: boolean } | null;
 }
 
 interface Product {
@@ -35,6 +37,7 @@ interface Product {
   description: string;
   image: string;
   slug: string;
+  hasAddons: boolean;
 }
 
 function nameToSlug(name: string): string {
@@ -68,6 +71,7 @@ function mapApiProduct(p: ApiProduct): Product {
     description: p.description ?? '',
     image: p.imageUrl ?? '',
     slug: nameToSlug(p.name),
+    hasAddons: !!p.addonSummary,
   };
 }
 
@@ -194,6 +198,7 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: "1.05rem", fontWeight: 500, marginBottom: ".2rem" }}>{item.name}</div>
+                  {item.addonsLabel && <div style={{ fontSize: ".75rem", color: "#666", marginBottom: ".2rem" }}>{item.addonsLabel}</div>}
                   <div style={{ fontSize: ".8rem", color: "var(--lhb-moss)", marginBottom: ".5rem" }}>${item.price.toFixed(2)}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
                     <button onClick={() => setQty(item.id, item.qty - 1)} style={{ width: 26, height: 26, background: "var(--lhb-parchment-dark)", border: "1px solid var(--lhb-gold)", borderRadius: "2px", cursor: "pointer", fontSize: "1rem", lineHeight: 1 }}>−</button>
@@ -223,6 +228,8 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 function ProductCard({ product }: { product: Product }) {
   const handleAdd = (e: React.MouseEvent) => {
+    // A product with add-ons is added from its page, where they can be picked (the card link opens it).
+    if (product.hasAddons) return;
     e.preventDefault();
     addToCart({ id: product.id, name: product.name, price: product.price, image: product.image, qty: 1 });
   };
@@ -241,7 +248,7 @@ function ProductCard({ product }: { product: Product }) {
             <span className="pcard-price">${product.price.toFixed(2)}</span>
             {product.bundleLabel && <span className="pcard-bundle">{product.bundleLabel}</span>}
           </div>
-          <button className="pcard-add" onClick={handleAdd} aria-label="Add to cart">+</button>
+          <button className="pcard-add" onClick={handleAdd} aria-label={product.hasAddons ? "Choose options" : "Add to cart"}>+</button>
         </div>
       </div>
     </Link>

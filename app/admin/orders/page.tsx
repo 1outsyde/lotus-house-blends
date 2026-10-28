@@ -59,7 +59,7 @@ export default async function AdminOrders() {
       });
 
       orders = sorted.map((r) => {
-        let parsedItems: Array<{ name: string; qty: number; price: number }> = [];
+        let parsedItems: Array<{ name: string; qty: number; price: number; variant_label?: string; addons_label?: string | null }> = [];
         if (r.items) {
           if (typeof r.items === 'string') {
             try { const p = JSON.parse(r.items); parsedItems = Array.isArray(p) ? p : []; } catch { parsedItems = []; }

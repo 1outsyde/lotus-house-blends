@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardCalendar from './DashboardCalendar';
 import ManagePayoutsButton from './ManagePayoutsButton';
 import UpNextCard from './UpNextCard';
+import { lineDetail } from '@/lib/productAddons';
 
 interface Order {
   id: string;
@@ -19,10 +20,13 @@ interface Order {
 }
 
 function itemsSummary(items: Order['items']): string {
-  const parsed: Array<{ name: string; qty: number }> =
+  const parsed: Array<{ name: string; qty: number; variant_label?: string; addons_label?: string | null }> =
     typeof items === 'string' ? JSON.parse(items) : (items ?? []);
   if (!Array.isArray(parsed) || parsed.length === 0) return 'No items';
-  return parsed.map((it) => `${it.name} ×${it.qty}`).join(', ');
+  return parsed.map((it) => {
+    const detail = lineDetail(it.variant_label, it.addons_label);
+    return `${it.name}${detail ? ` (${detail})` : ''} ×${it.qty}`;
+  }).join(', ');
 }
 
 function fmt(cents: number): string {
