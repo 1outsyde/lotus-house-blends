@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import FulfillModal from './FulfillModal';
 import { buildTrackingUrl, type Carrier } from '@/lib/lhb-config';
+import { lineDetail } from '@/lib/productAddons';
 
 export interface OrderRow {
   id: string;
   order_number: number;
   customer_id: string;
   customer_name: string | null;
-  items: Array<{ name: string; qty: number; price: number }>;
+  items: Array<{ name: string; qty: number; price: number; variant_label?: string; addons_label?: string | null }>;
   total_amount: number;
   status: string;
   shipping_address: string | null;
@@ -178,7 +179,12 @@ export default function OrdersClient({ initialOrders }: { initialOrders: OrderRo
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#1E3020', fontFamily: 'Jost, sans-serif' }}>{item.name}</span>
+                      <span style={{ color: '#1E3020', fontFamily: 'Jost, sans-serif' }}>
+                        {item.name}
+                        {lineDetail(item.variant_label, item.addons_label) && (
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(30,48,32,0.55)' }}>{lineDetail(item.variant_label, item.addons_label)}</span>
+                        )}
+                      </span>
                       <span style={{ color: 'rgba(30,48,32,0.55)', fontFamily: 'Jost, sans-serif' }}>
                         ×{item.qty} — ${((item.price / 100) * item.qty).toFixed(2)}
                       </span>

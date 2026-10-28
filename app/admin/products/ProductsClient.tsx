@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import AddEditModal from './AddEditModal';
+import { stockLabel } from '@/lib/stock';
 
 export interface ProductRow {
   id: string;
@@ -17,6 +18,8 @@ export interface ProductRow {
   isFeatured: boolean;
   category?: string | null;
   createdAt?: string;
+  inventory?: number | null;
+  trackInventory?: boolean | null;
 }
 
 type DisplayStatus = 'live' | 'paused' | 'draft' | 'archived';
@@ -259,6 +262,9 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
                   </p>
                   <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '1rem', color: '#B8831A', margin: 0, fontWeight: 500 }}>
                     ${(product.price / 100).toFixed(2)}
+                  </p>
+                  <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.78rem', color: 'rgba(30,48,32,0.55)', margin: 0 }}>
+                    Stock: {stockLabel(product)}
                   </p>
 
                   {/* Active/Inactive pill */}

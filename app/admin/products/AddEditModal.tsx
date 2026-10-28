@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { ProductRow } from './ProductsClient';
+import { STOCK_CHOICES, stockModeOf, stockPayload, type StockMode } from '@/lib/stock';
 
 interface AddEditModalProps {
   product: ProductRow | null;
@@ -48,6 +49,9 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
   const [isActive, setIsActive] = useState(product ? product.isActive : true);
   const [isFeatured, setIsFeatured] = useState(product?.isFeatured ?? false);
   const [imageUrl, setImageUrl] = useState(product?.imageUrl ?? '');
+  // Stock is optional (Legend 2026-10-28): new products start on No limit.
+  const [stockMode, setStockMode] = useState<StockMode>(stockModeOf(product));
+  const [stockCount, setStockCount] = useState(stockModeOf(product) === 'count' ? String(product!.inventory) : '');
 
   const [uploading, setUploading] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
@@ -97,6 +101,8 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
     const parsedPrice = parseFloat(price);
     if (!price || isNaN(parsedPrice) || parsedPrice <= 0) { setPriceError('Price is required'); valid = false; }
     if (!valid) return;
+    const stock = stockPayload(stockMode, stockCount);
+    if ('error' in stock) { setSubmitError(stock.error); return; }
 
     setSubmitting(true);
     const body: Record<string, unknown> = {
@@ -108,6 +114,8 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
       isActive,
       isFeatured,
       category: category.trim() || null,
+      inventory: stock.inventory,
+      trackInventory: stock.trackInventory,
     };
     if (compareAtPrice) {
       const cap = parseFloat(compareAtPrice);
@@ -282,6 +290,34 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
               onChange={(e) => setCategory(e.target.value)}
               style={inputSt}
             />
+          </div>
+
+          {/* Stock */}
+          <div style={fieldWrap}>
+            <span style={labelSt} id="stock-label">Stock</span>
+            <div role="radiogroup" aria-labelledby="stock-label" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {STOCK_CHOICES.map((c) => {
+                const on = stockMode === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setStockMode(c.value)}
+                    style={{ padding: '8px 14px', minHeight: 38, border: `1px solid ${on ? '#1E3020' : 'rgba(30,48,32,0.25)'}`, background: on ? '#1E3020' : 'transparent', color: on ? '#F2EBD9' : '#1E3020', fontFamily: 'Jost, sans-serif', fontSize: '0.82rem', cursor: 'pointer' }}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(30,48,32,0.45)', marginTop: 4, fontFamily: 'Jost, sans-serif' }}>
+              {STOCK_CHOICES.find((c) => c.value === stockMode)?.hint} Customers never see the number, only Sold out.
+            </p>
+            {stockMode === 'count' && (
+              <input type="number" min="1" step="1" aria-label="How many you have" placeholder="How many you have" value={stockCount} onChange={(e) => setStockCount(e.target.value)} style={{ ...inputSt, marginTop: 8 }} />
+            )}
           </div>
 
           {/* 7. Active */}

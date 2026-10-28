@@ -1,12 +1,23 @@
 import { LHB_CONFIG } from './lhb-config';
+import { addonsKey, type CartAddon } from './productAddons';
 
 export interface CartItem {
+  /** Line id: the product id, plus the picked add-ons when there are any (cartLineId). */
   id: string;
   name: string;
+  /** Per unit, in dollars, add-ons included. Display only: checkout charges the backend prices. */
   price: number;
   image: string;
   qty: number;
+  /** Set on lines added with add-ons (backend #371). Older lines have only id = product id. */
+  productId?: string;
+  addons?: CartAddon[];
+  addonsLabel?: string;
 }
+
+/** Same product with different add-ons = a different line. No add-ons = the product id, as before. */
+export const cartLineId = (productId: string, addons?: CartAddon[]): string =>
+  addonsKey(addons) ? `${productId}:${addonsKey(addons)}` : productId;
 
 const CART_KEY = LHB_CONFIG.cartKey;
 type Listener = () => void;
