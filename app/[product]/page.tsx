@@ -31,6 +31,10 @@ const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body { background: var(--lhb-parchment); color: var(--lhb-black); font-family: var(--font-body); }
+  /* Phones: image above the details (the two columns made the page wider than the screen). */
+  @media (max-width: 760px) {
+    .pdp-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 2rem !important; margin-top: 1.25rem !important; }
+  }
 `;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -318,11 +322,11 @@ export default function ProductPage() {
       </div>
 
       {/* ── PRODUCT DETAIL ──────────────────────────────────────────────── */}
-      <div style={{
+      <div className="pdp-grid" style={{
         maxWidth: 1100, margin: "2rem auto",
         padding: "0 1.5rem 4rem",
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
         gap: "3.5rem",
         alignItems: "start",
       }}>
