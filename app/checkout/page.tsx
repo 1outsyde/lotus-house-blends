@@ -339,11 +339,11 @@ function OrderSummary({ items, rewardsDiscountCents = 0, totalOverrideCents = nu
             borderBottom: `1px solid ${T.borderFaint}`, alignItems: 'center',
           }}>
             <div style={{
-              width: 48, height: 48, flexShrink: 0, background: '#e8e0d0',
+              width: 48, height: 60, flexShrink: 0, background: '#e8e0d0',
               border: `1px solid ${T.borderFaint}`, position: 'relative', overflow: 'hidden',
             }}>
               <Image src={item.image} alt={item.name} fill
-                style={{ objectFit: 'contain' }}
+                style={{ objectFit: 'cover' }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>

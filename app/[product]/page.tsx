@@ -352,7 +352,7 @@ export default function ProductPage() {
             alt={product.name}
             style={{
               display: "block", width: "100%",
-              aspectRatio: "1/1", objectFit: "contain", padding: "2.5rem",
+              aspectRatio: "4 / 5", objectFit: "cover",
             }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.opacity = "0.3";
@@ -538,7 +538,7 @@ export default function ProductPage() {
                 <img
                   src={r.image}
                   alt={r.name}
-                  style={{ width: 72, height: 72, objectFit: "contain", background: "#fff", flexShrink: 0 }}
+                  style={{ width: 64, height: 80, objectFit: "cover", background: "#fff", flexShrink: 0 }}
                   onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
                 />
                 <div>
