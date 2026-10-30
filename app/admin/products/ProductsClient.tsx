@@ -51,7 +51,7 @@ function Initials({ name }: { name: string }) {
   const text = name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   return (
     <div style={{
-      width: '100%', aspectRatio: '1/1',
+      width: '100%', aspectRatio: '4 / 5',
       background: '#1E3020', display: 'flex', alignItems: 'center', justifyContent: 'center',
       color: '#F2EBD9', fontFamily: 'Cormorant Garamond, Georgia, serif',
       fontSize: '2rem', fontWeight: 500,
@@ -228,7 +228,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
             return (
               <div key={product.id} className="lhb-pcard" style={{ opacity: isLoading ? 0.7 : 1 }}>
                 {/* Image area */}
-                <div style={{ position: 'relative', aspectRatio: '1/1', width: '100%' }}>
+                <div style={{ position: 'relative', aspectRatio: '4 / 5', width: '100%' }}>
                   {product.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

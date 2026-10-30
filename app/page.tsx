@@ -109,8 +109,8 @@ const CSS_VARS = `
 
   .pcard { background: var(--lhb-parchment); display: block; text-decoration: none; cursor: pointer; transition: transform .25s, box-shadow .25s; position: relative; overflow: hidden; }
   .pcard:hover { transform: translateY(-5px); box-shadow: 0 24px 60px rgba(26,18,8,.13); }
-  .pcard-img { height: 280px; overflow: hidden; position: relative; background: #e8e0d0; display: flex; align-items: center; justify-content: center; }
-  .pcard-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 1.5rem; transition: transform .4s; }
+  .pcard-img { aspect-ratio: 4 / 5; overflow: hidden; position: relative; background: #e8e0d0; display: flex; align-items: center; justify-content: center; }
+  .pcard-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform .4s; }
   .pcard:hover .pcard-img img { transform: scale(1.06); }
   .ptype-tag { position: absolute; top: .9rem; left: .9rem; font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; padding: .28rem .7rem; background: rgba(242,235,217,.93); color: var(--lhb-text-mid); font-weight: 400; }
   .pcard-body { padding: 1.4rem 1.4rem 1.6rem; }
@@ -150,7 +150,6 @@ const CSS_VARS = `
     .product-grid { grid-template-columns: 1fr; }
     .blend-group-hdr { flex-wrap: wrap; gap: .5rem; }
     .blend-group-sub { margin-left: 0 !important; font-size: .7rem; }
-    .pcard-img { height: 220px; }
   }
 `;
 
@@ -192,7 +191,7 @@ function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           ) : (
             items.map((item) => (
               <div key={item.id} style={{ display: "flex", gap: "1rem", padding: "1rem 0", borderBottom: "1px solid rgba(200,168,130,.25)" }}>
-                <div style={{ width: 72, height: 72, flexShrink: 0, background: "var(--lhb-parchment-dark)", borderRadius: "2px", overflow: "hidden", position: "relative" }}>
+                <div style={{ width: 58, height: 72, flexShrink: 0, background: "var(--lhb-parchment-dark)", borderRadius: "2px", overflow: "hidden", position: "relative" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>

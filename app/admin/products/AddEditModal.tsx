@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ProductRow } from './ProductsClient';
 import { STOCK_CHOICES, stockModeOf, stockPayload, type StockMode } from '@/lib/stock';
+import { useCropFile } from '@/components/crop/useCropFile';
 
 interface AddEditModalProps {
   product: ProductRow | null;
@@ -56,6 +57,7 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
   const [uploading, setUploading] = useState(false);
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const { crop, cropModal, isCropping } = useCropFile();
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -64,16 +66,22 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      // Escape while cropping closes only the crop box.
+      if (e.key === 'Escape' && !isCropping) onClose();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, isCropping]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadFileName(file.name);
+    const picked = e.target.files?.[0];
+    e.target.value = '';
+    if (!picked) return;
+    // 4:5 crop first (photo ratios step 4), same shape as products in the app and goutsyde.com.
+    const cropped = await crop(picked, 'product');
+    if (!cropped) return;
+    const file = cropped.file;
+    setUploadFileName(picked.name);
     setUploadError('');
     setUploading(true);
     try {
@@ -155,6 +163,7 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
+      {cropModal}
       <div style={{
         background: '#F9F6EF',
         border: '1px solid rgba(30,48,32,0.12)',
@@ -180,11 +189,11 @@ export default function AddEditModal({ product, onClose, onSaved }: AddEditModal
                 <img
                   src={imageUrl}
                   alt="Product preview"
-                  style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(30,48,32,0.15)', flexShrink: 0 }}
+                  style={{ width: 64, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(30,48,32,0.15)', flexShrink: 0 }}
                 />
               ) : (
                 <div style={{
-                  width: 80, height: 80, borderRadius: 4, flexShrink: 0,
+                  width: 64, height: 80, borderRadius: 4, flexShrink: 0,
                   background: '#1E3020', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#F2EBD9', fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', fontWeight: 500,
                   border: '1px solid rgba(30,48,32,0.15)',
